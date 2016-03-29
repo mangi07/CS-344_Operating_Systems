@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 #	File Name: stats
 # This shell script calculates the average and median
 # for either the rows and columns of a text file
@@ -14,3 +14,7 @@
 # and store in separate data structure or temporary file.
 
 # Output the calculations.
+
+
+# Hints: Use trap command when dealing with temporary files
+# to make sure they get deleted
