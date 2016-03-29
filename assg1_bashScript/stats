@@ -1,0 +1,16 @@
+#!/bin/sh
+#	File Name: stats
+# This shell script calculates the average and median
+# for either the rows and columns of a text file
+# that contains numbers.
+
+# Get user options.
+
+# Read and store numbers from file input, read in different order
+# depending on whether rows or columns is the option.
+# The data will be lists of numbers.
+
+# Calculate averages and medians from the lists of numbers
+# and store in separate data structure or temporary file.
+
+# Output the calculations.
