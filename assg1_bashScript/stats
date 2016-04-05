@@ -1,15 +1,70 @@
-#!/bin/sh -e
+#!/bin/bash -e
 #	File Name: stats
 # This shell script calculates the average and median
 # for either the rows and columns of a text file
 # that contains numbers.
 
-# Get user options.
+# Check user options
+usageMessage="Usage: stats {-rows|-cols} [file]"
+if [[ "$#" -gt "2" || "$#" -lt "1" ]];
+then
+	echo $usageMessage;
+	exit 1;
+fi
+# Check that the first argument is correct.
+if ! [[ $1 == -r* || $1 == -c* ]];
+then
+	echo $usageMessage;
+	exit 1;
+fi
+# If two arguments, check that file name, identified by second argument, exists.
+if [[ "$#" == "2" && -r $2 ]];
+then
+	echo "Able to read file:)";
+fi
+
+exit 0;
+
+# Get user data based on options.
+tempDataFile="tempDataFile$$"
+inputDataFile=""
+if [ "$#" == "1" ];
+then
+	cat > $tempDataFile;
+elif [ "$#" = "2" ];
+then
+	inputDatafile=$2;
+fi
+# Create the temporary file and validate input.
+# Use trap to clean temp files if termination signals are received.
+# [[ $var =~ ^-{0,1}[0-9]+$ ]] && echo "Is integer."
+if [[ $1 == -r* ]];
+then
+	read -r line $2
+	echo "calculating row stats";
+elif [[ $1 == -c* ]];
+then
+	echo "calculating column stats";
+fi
+
 
 # Read and store numbers from file input, read in different order
 # depending on whether rows or columns is the option.
 # The data will be lists of numbers.
 
+read inputrow
+read -r -a array <<< "$inputrow"
+# if read from standard input
+# then use the read command to prompt the user
+# else read from file as illustrated in the following
+echo "1 2 3" > input_file
+counter=0
+for line in `cat "input_file"`; do
+	echo $line
+	((counter++));
+done
+
+echo $counter
 # Calculate averages and medians from the lists of numbers
 # and store in separate data structure or temporary file.
 
