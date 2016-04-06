@@ -18,23 +18,34 @@ then
 	exit 1;
 fi
 # If two arguments, check that file name, identified by second argument, exists.
+# Also, if there are two arguments, we need to check that the file is not empty.
+#   This still needs to be implemented.
 if [[ "$#" == "2" && -r $2 ]];
 then
 	echo "Able to read file:)";
 fi
 
-exit 0;
 
 # Get user data based on options.
 tempDataFile="tempDataFile$$"
-inputDataFile=""
+inputDataFile="stdInputFile$$"
 if [ "$#" == "1" ];
 then
-	cat > $tempDataFile;
+	cat > $inputDataFile;
+	# trace statement
+	echo -e "Only one arg. Storing user input in new file stdInputFile$$"; 
 elif [ "$#" = "2" ];
 then
-	inputDatafile=$2;
+	inputDataFile=$2;
+	# trace statement
+	echo -e "Two args. Using $2 as the input file";
 fi
+
+# trace statement
+cat $inputDataFile
+exit 0;
+
+
 # Create the temporary file and validate input.
 # Use trap to clean temp files if termination signals are received.
 # [[ $var =~ ^-{0,1}[0-9]+$ ]] && echo "Is integer."
