@@ -4,6 +4,10 @@
 # for either the rows and columns of a text file
 # that contains numbers.
 
+# Make sure any temporary files are removed
+# if the program is forcefully stopped.
+trap "rm –f $*$$; exit 1" INT HUP TERM
+
 # Check user options
 usageMessage="Usage: stats {-rows|-cols} [file]"
 if [[ "$#" -gt "2" || "$#" -lt "1" ]];
@@ -17,12 +21,11 @@ then
 	echo $usageMessage;
 	exit 1;
 fi
-# If two arguments, check that file name, identified by second argument, exists.
-# Also, if there are two arguments, we need to check that the file is not empty.
-#   This still needs to be implemented.
-if [[ "$#" == "2" && -r $2 ]];
+# If two arguments, check that file name, identified by second argument, is readable.
+if [[ "$#" == "2" ]] && ! [[ -r $2 ]];
 then
-	echo "Able to read file:)";
+	echo "stats: cannot read $2";
+	exit 1;
 fi
 
 
@@ -43,20 +46,32 @@ fi
 
 # trace statement
 cat $inputDataFile
-exit 0;
 
 
-# Create the temporary file and validate input.
-# Use trap to clean temp files if termination signals are received.
+# Create the temporary file used for calculations
+# and validate input.
 # [[ $var =~ ^-{0,1}[0-9]+$ ]] && echo "Is integer."
+calculationSourceFile=""
 if [[ $1 == -r* ]];
 then
-	read -r line $2
-	echo "calculating row stats";
+	# trace statement
+	echo "row stats";
+	calculationSourceFile=$inputDataFile
 elif [[ $1 == -c* ]];
 then
-	echo "calculating column stats";
+	# trace statement
+	echo "column stats";
+	read -ra array < $inputDataFile
+	for index in ${!array[@]}
+	do
+		echo `expr $index + 1`	
+	done
 fi
+
+
+rm -f *$$
+
+exit 0;
 
 
 # Read and store numbers from file input, read in different order
@@ -84,3 +99,7 @@ echo $counter
 
 # Hints: Use trap command when dealing with temporary files
 # to make sure they get deleted
+
+
+# Remove all temporary files
+rm -f *$$
