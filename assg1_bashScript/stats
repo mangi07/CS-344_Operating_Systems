@@ -35,15 +35,15 @@ if [ "$#" == "1" ];
 then
 	cat > $inputFile;
 	# trace statement
-	echo -e "Only one arg. Storing user input in new file stdInputFile$$"; 
+	#echo -e "Only one arg. Storing user input in new file stdInputFile$$"; 
 elif [ "$#" == "2" ];
 then
 	inputFile=$2;
 	# trace statement
-	echo -e "Two args. Using $2 as the input file";
+	#echo -e "Two args. Using $2 as the input file";
 fi
 # trace statement
-cat $inputFile
+#cat $inputFile
 
 
 # dataFile will either be the inputFile provided in the previous if statement
@@ -54,12 +54,12 @@ dataFile=""
 if [[ $1 == -r* ]];
 then
 	# trace statement
-	echo "row stats";
+	#echo "row stats";
 	dataFile=$inputFile
 elif [[ $1 == -c* ]];
 then
 	# trace statement
-	echo "column stats";
+	#echo "column stats";
 	dataFile="dataFile$$"
 	read -ra array < $inputFile
 	for index in ${!array[@]}
@@ -72,33 +72,32 @@ then
 	done
 fi
 # trace statements
-echo "The input file:"
-cat $inputFile
-echo "The data file:"
+#echo "The input file:"
+#cat $inputFile
+#echo "The data file:"
 cat $dataFile
 
-rm -f *$$
+# Read from input.
+# Validate with something like [[ $var =~ ^-{0,1}[0-9]+$ ]] && echo "Is integer."
+# Calculate averages and medians from the lists of numbers
+# and store in separate data structure or temporary file.
+while read line
+do
+	echo $line
+	# Do the validation and calculation stuff here
+	# and append to an output file as you go.
+done <$dataFile
+
 
 exit 0;
 
-
-# Read from input, validate, and calculate
-# [[ $var =~ ^-{0,1}[0-9]+$ ]] && echo "Is integer."
-read inputrow
-read -r -a array <<< "$inputrow"
-echo "1 2 3" > input_file
-counter=0
-for line in `cat "input_file"`; do
-	echo $line
-	((counter++));
-done
-
-echo $counter
-# Calculate averages and medians from the lists of numbers
-# and store in separate data structure or temporary file.
 
 # Output the calculations.
 
 
 # Remove all temporary files
 rm -f *$$
+
+
+# Note: some problems with trap.  Test this well!!
+
