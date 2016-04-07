@@ -30,59 +30,62 @@ fi
 
 
 # Get user data based on options.
-tempDataFile="tempDataFile$$"
-inputDataFile="stdInputFile$$"
+inputFile="stdInputFile$$"
 if [ "$#" == "1" ];
 then
-	cat > $inputDataFile;
+	cat > $inputFile;
 	# trace statement
 	echo -e "Only one arg. Storing user input in new file stdInputFile$$"; 
-elif [ "$#" = "2" ];
+elif [ "$#" == "2" ];
 then
-	inputDataFile=$2;
+	inputFile=$2;
 	# trace statement
 	echo -e "Two args. Using $2 as the input file";
 fi
-
 # trace statement
-cat $inputDataFile
+cat $inputFile
 
 
-# Create the temporary file used for calculations
-# and validate input.
-# [[ $var =~ ^-{0,1}[0-9]+$ ]] && echo "Is integer."
-calculationSourceFile=""
+# dataFile will either be the inputFile provided in the previous if statement
+# (if calculating based on the -r* option)
+# or created, as a temporary file, as the transpose of inputFile
+# (if calculating based on the -c* option)
+dataFile=""
 if [[ $1 == -r* ]];
 then
 	# trace statement
 	echo "row stats";
-	calculationSourceFile=$inputDataFile
+	dataFile=$inputFile
 elif [[ $1 == -c* ]];
 then
 	# trace statement
 	echo "column stats";
-	read -ra array < $inputDataFile
+	dataFile="dataFile$$"
+	read -ra array < $inputFile
 	for index in ${!array[@]}
 	do
-		echo `expr $index + 1`	
+		column=`expr $index + 1`	
+		# transpose each returned column from the cut
+		# and append it as a new line to dataFile
+		cut -f $column $inputFile | tr '\n' '\t' >> $dataFile
+		echo "" >> $dataFile
 	done
 fi
-
+# trace statements
+echo "The input file:"
+cat $inputFile
+echo "The data file:"
+cat $dataFile
 
 rm -f *$$
 
 exit 0;
 
 
-# Read and store numbers from file input, read in different order
-# depending on whether rows or columns is the option.
-# The data will be lists of numbers.
-
+# Read from input, validate, and calculate
+# [[ $var =~ ^-{0,1}[0-9]+$ ]] && echo "Is integer."
 read inputrow
 read -r -a array <<< "$inputrow"
-# if read from standard input
-# then use the read command to prompt the user
-# else read from file as illustrated in the following
 echo "1 2 3" > input_file
 counter=0
 for line in `cat "input_file"`; do
@@ -95,10 +98,6 @@ echo $counter
 # and store in separate data structure or temporary file.
 
 # Output the calculations.
-
-
-# Hints: Use trap command when dealing with temporary files
-# to make sure they get deleted
 
 
 # Remove all temporary files
