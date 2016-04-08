@@ -1,0 +1,34 @@
+#!/bin/bash
+
+sorted=($1)
+
+
+count=${#sorted[@]}
+
+mid=`expr $count / 2`
+median=${sorted[$mid]}
+
+# If sorted array is odd, we need to make sure
+# that we calculate the correct median.
+if ! [[ `expr $mid \* 2` -lt $count ]] && [[ $count -ge 2 ]]
+then
+	firstVal=${sorted[`expr $mid - 1`]}
+	secondVal=${sorted[$mid]}
+
+	# trace statements
+	echo $firstVal
+	echo $secondVal
+
+	if `test $firstVal -gt $secondVal`
+	then median=$firstVal
+	else median=$secondVal
+	fi
+fi
+
+echo "median:"
+echo $median
+
+
+
+exit 0
+

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if `test $# -ne 2`; then echo "Usage: round <numerator> <denominator>"; exit 1; fi
+
+num=$1
+denom=$2
+
+avg=`expr \( $num + \( $denom / 2 \) \) / $denom`
+
+echo $avg
+
+exit 0
+

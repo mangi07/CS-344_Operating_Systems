@@ -1,0 +1,25 @@
+#!/bin/sh -e
+
+
+
+echo "one two three" > newfile$$
+echo "four five" > secondnewfile$$
+
+echo "New file contents:"
+cat newfile$$
+echo "Second new file contents:"
+cat secondnewfile$$
+
+ls
+rm -f *$$
+ls
+
+echo "end"
+
+exit 0;
+
+read -p "Enter a line" inputrow
+read -r -a array <<< "$inputrow"
+
+echo ${array[@]}
+

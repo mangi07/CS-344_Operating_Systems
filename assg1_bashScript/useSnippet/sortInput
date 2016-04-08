@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if `test $# -lt 1`; then echo "Usage: sortInput <quoted array>"; exit 1; fi
+
+numbers=($1)
+
+IFS=$'\n'
+sorted=($(sort -n <<<"${numbers[*]}"))
+unset IFS
+
+echo ${sorted[@]}
+
+exit 0
+
+
