@@ -53,13 +53,9 @@ fi
 dataFile=""
 if [[ $1 == -r* ]];
 then
-	# trace statement
-	#echo "row stats";
 	dataFile=$inputFile
 elif [[ $1 == -c* ]];
 then
-	# trace statement
-	#echo "column stats";
 	dataFile="dataFile$$"
 	read -ra array < $inputFile
 	for index in ${!array[@]}
@@ -67,29 +63,58 @@ then
 		column=`expr $index + 1`	
 		# transpose each returned column from the cut
 		# and append it as a new line to dataFile
+		# Note: only handles tab as line separator between numbers
 		cut -f $column $inputFile | tr '\n' '\t' >> $dataFile
 		echo "" >> $dataFile
 	done
 fi
-# trace statements
-#echo "The input file:"
-#cat $inputFile
-#echo "The data file:"
-cat $dataFile
+# Now we have the dataFile to work with...
+
+# Takes a single argument, a sorted array of numbers
+function getMedian {
+	sorted=$1
+	count=${#sorted[@]}
+
+	mid=`expr $count / 2`
+	median=${sorted[$mid]}
+
+	# If sorted array is odd, we need to make sure
+	# that we calculate the correct median.
+	if ! [[ `expr $mid \* 2` -lt $count ]] && [[ $count -ge 2 ]]
+	then
+		firstVal=${sorted[`expr $mid - 1`]}
+		secondVal=${sorted[$mid]}
+
+		if `test $firstVal -gt $secondVal`
+		then median=$firstVal
+		else median=$secondVal
+		fi
+	fi
+
+	echo "sorted array:"
+	echo ${sorted[@]}
+	echo "median:"
+	echo $median
+}
+
 
 # Read from input.
 # Validate with something like [[ $var =~ ^-{0,1}[0-9]+$ ]] && echo "Is integer."
 # Calculate averages and medians from the lists of numbers
 # and store in separate data structure or temporary file.
-while read line
+echo "STARTING WHILE LOOP..."
+while read -a numline
 do
-	echo $line
 	# Do the validation and calculation stuff here
 	# and append to an output file as you go.
+	IFS=$'\n'
+	sorted=($(sort -n <<<"${numline[*]}"))
+	unset IFS
+
+	getMedian $sorted
 done <$dataFile
 
 
-exit 0;
 
 
 # Output the calculations.
@@ -98,6 +123,6 @@ exit 0;
 # Remove all temporary files
 rm -f *$$
 
+exit 0;
 
-# Note: some problems with trap.  Test this well!!
-
+# Note: some problems with trap.  Test this well!!  
