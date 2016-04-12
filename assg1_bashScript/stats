@@ -6,21 +6,21 @@
 
 # Make sure any temporary files are removed
 # if the program is forcefully stopped.
-trap "
-if [ -f stdInputFile$$ ]
-then
-echo 'top'
-rm stdInputFile$$
-fi
-
-if [ -f dataFile$$ ]
-then
-echo 'second top'
-rm dataFile$$
-fi
-
-exit 1" INT HUP TERM
-
+#trap "
+#if [ -f stdInputFile$$ ]
+#then
+#echo 'top'
+#rm stdInputFile$$
+#fi
+#
+#if [ -f dataFile$$ ]
+#then
+#echo 'second top'
+#rm dataFile$$
+#fi
+#
+#exit 1" INT HUP TERM
+trap "rm *$$; echo 'trap commands executed'; exit 1;" INT HUP TERM ERR
 
 # Check user options
 usageMessage="Usage: stats {-rows|-cols} [file]"
@@ -121,7 +121,8 @@ function getAverage {
 # Validate with something like [[ $var =~ ^-{0,1}[0-9]+$ ]] && echo "Is integer."
 # Calculate averages and medians from the lists of numbers
 # and store in separate data structure or temporary file.
-echo "STARTING WHILE LOOP..."
+tempMediansFile="tempMedians$$"
+tempAveragesFile="tempAverages$$"
 while read -a numline
 do
 	# Do the validation and calculation stuff here
@@ -131,19 +132,20 @@ do
 	unset IFS
 
 	median=`getMedian`
-	echo $median
+	printf "$median\n" >> $tempMediansFile
 	average=`getAverage`
-	echo $average
+	printf "$average\n" >> $tempAveragesFile
 	
 done <$dataFile
+cat $tempMediansFile
+cat $tempAveragesFile
 
 
 # Output the calculations.
 
 
 # Remove all temporary files
-rm -f *$$
-#rm -f dataFile*
+rm *$$
 
 
 exit 0;
