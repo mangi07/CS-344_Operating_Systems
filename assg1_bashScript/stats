@@ -116,9 +116,8 @@ function getAverage {
 
 
 # Read from input.
-# Validate with something like [[ $var =~ ^-{0,1}[0-9]+$ ]] && echo "Is integer."
 # Calculate averages and medians from the lists of numbers
-# and store in separate data structure or temporary file.
+# and store in temporary files.
 tempMediansFile="tempMedians$$"
 tempAveragesFile="tempAverages$$"
 if [[ $1 == -r* ]]; then printf "Average\tMedian\n"; fi
