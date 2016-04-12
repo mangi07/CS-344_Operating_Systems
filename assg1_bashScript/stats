@@ -13,28 +13,28 @@
 echo "dummy file" > dummyTemp$$
 # Make sure any temporary files are removed
 # if the program is forcefully stopped.
-trap "rm *$$; echo 'trap commands executed'; exit 1;" INT HUP TERM ERR
+trap "rm *$$; exit 1;" INT HUP TERM ERR
 
 
 # Check user options
 usageMessage="Usage: stats {-rows|-cols} [file]"
 if [[ "$#" -gt "2" || "$#" -lt "1" ]];
 then
-	echo $usageMessage;
+	echo $usageMessage 1>&2;
 	rm *$$
 	exit 1;
 fi
 # Check that the first argument is correct.
 if ! [[ $1 == -r* || $1 == -c* ]];
 then
-	echo $usageMessage;
+	echo $usageMessage 1>&2;
 	rm *$$
 	exit 1;
 fi
 # If two arguments, check that file name, identified by second argument, is readable.
 if [[ "$#" == "2" ]] && ! [[ -r $2 ]];
 then
-	echo "stats: cannot read $2";
+	echo "./stats: cannot read $2" 1>&2;
 	rm *$$
 	exit 1;
 fi
