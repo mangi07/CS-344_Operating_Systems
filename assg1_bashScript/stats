@@ -1,44 +1,41 @@
 #!/bin/bash -e
 #	File Name: stats
+#	Author:	Ben R. Olson
+#	Date:	April 12, 2016
+#	Assgn:	OSU CS 344 Operating Systems Assignment 1
 # This shell script calculates the average and median
 # for either the rows and columns of a text file
 # that contains numbers.
 
+
+# Make sure any attempt to remove temporary file(s)
+# matching *$$ is successful, to avoid errors.
+echo "dummy file" > dummyTemp$$
 # Make sure any temporary files are removed
 # if the program is forcefully stopped.
-#trap "
-#if [ -f stdInputFile$$ ]
-#then
-#echo 'top'
-#rm stdInputFile$$
-#fi
-#
-#if [ -f dataFile$$ ]
-#then
-#echo 'second top'
-#rm dataFile$$
-#fi
-#
-#exit 1" INT HUP TERM
 trap "rm *$$; echo 'trap commands executed'; exit 1;" INT HUP TERM ERR
+
 
 # Check user options
 usageMessage="Usage: stats {-rows|-cols} [file]"
 if [[ "$#" -gt "2" || "$#" -lt "1" ]];
 then
 	echo $usageMessage;
+	rm *$$
 	exit 1;
 fi
 # Check that the first argument is correct.
 if ! [[ $1 == -r* || $1 == -c* ]];
 then
 	echo $usageMessage;
+	rm *$$
 	exit 1;
 fi
 # If two arguments, check that file name, identified by second argument, is readable.
 if [[ "$#" == "2" ]] && ! [[ -r $2 ]];
 then
 	echo "stats: cannot read $2";
+	rm *$$
 	exit 1;
 fi
 
@@ -77,6 +74,7 @@ then
 	done
 fi
 # Now we have the dataFile to work with...
+
 
 # sorted numbers string, each number on a separate line, must be defined
 function getMedian {
@@ -123,25 +121,47 @@ function getAverage {
 # and store in separate data structure or temporary file.
 tempMediansFile="tempMedians$$"
 tempAveragesFile="tempAverages$$"
+if [[ $1 == -r* ]]; then printf "Average\tMedian\n"; fi
 while read -a numline
 do
-	# Do the validation and calculation stuff here
+	# Do the calculations here
 	# and append to an output file as you go.
 	IFS=$'\n'
 	sorted=($(sort -n <<<"${numline[*]}"))
 	unset IFS
 
 	median=`getMedian`
-	printf "$median\n" >> $tempMediansFile
 	average=`getAverage`
-	printf "$average\n" >> $tempAveragesFile
 	
+	# Calculations output is formatted differently
+	# depending on whether we are calculating
+	# by rows or columns.
+	if [[ $1 == -r* ]]
+	then
+		printf "$average\t$median\n"
+	else
+		printf "$median\n" >> $tempMediansFile
+		printf "$average\n" >> $tempAveragesFile
+	fi
 done <$dataFile
-cat $tempMediansFile
-cat $tempAveragesFile
 
 
-# Output the calculations.
+# Formatting columns calculations requires
+# a little extra work.
+if [[ $1 == -c* ]]
+then
+	printf "Averages:\n"
+	for a in `cat $tempAveragesFile`; do
+		printf "$a\t"
+	done
+	printf "\n"
+
+	printf "Medians:\n"
+	for m in `cat $tempMediansFile`; do
+		printf "$m\t"
+	done
+	printf "\n"
+fi
 
 
 # Remove all temporary files
