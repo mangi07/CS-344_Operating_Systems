@@ -110,10 +110,10 @@ function getAverage {
 		total=`expr $total + $num`
 	done
 
-	echo $total
 	count=${#sorted[@]}
 
 	avg=`expr \( $total + \( $count / 2 \) \) / $count`
+	echo $avg
 }
 
 
@@ -132,8 +132,8 @@ do
 
 	median=`getMedian`
 	echo $median
-	total=`getAverage`
-	echo $total
+	average=`getAverage`
+	echo $average
 	
 done <$dataFile
 
