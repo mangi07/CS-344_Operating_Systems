@@ -31,13 +31,21 @@ then
 	rm *$$
 	exit 1;
 fi
-# If two arguments, check that file name, identified by second argument, is readable.
+# If two arguments, check that file, identified by second argument, is readable.
 if [[ "$#" == "2" ]] && ! [[ -r $2 ]];
 then
 	echo "./stats: cannot read $2" 1>&2;
 	rm *$$
 	exit 1;
 fi
+# If two arguments, check that file, identified by second argument, is not empty.
+if [[ "$#" == "2" ]] && ! [[ -s $2 ]];
+then
+	echo "./stats: $2 is empty." 1>&2;
+	rm *$$
+	exit 1;
+fi
+
 
 
 # Get user data based on options.
