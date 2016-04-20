@@ -1,0 +1,179 @@
+#!/bin/bash -e
+#	File Name: stats
+#	Author:	Ben R. Olson
+#	Date:	April 12, 2016
+#	Assgn:	OSU CS 344 Operating Systems Assignment 1
+# This shell script calculates the average and median
+# for either the rows and columns of a text file
+# that contains numbers.
+
+
+# Make sure any attempt to remove temporary file(s)
+# matching *$$ is successful, to avoid errors.
+echo "dummy file" > dummyTemp$$
+# Make sure any temporary files are removed
+# if the program is forcefully stopped.
+trap "rm *$$; exit 1;" INT HUP TERM ERR
+
+
+# Check user options
+usageMessage="Usage: stats {-rows|-cols} [file]"
+if [[ "$#" -gt "2" || "$#" -lt "1" ]];
+then
+	echo $usageMessage 1>&2;
+	rm *$$
+	exit 1;
+fi
+# Check that the first argument is correct.
+if ! [[ $1 == -r* || $1 == -c* ]];
+then
+	echo $usageMessage 1>&2;
+	rm *$$
+	exit 1;
+fi
+# If two arguments, check that file, identified by second argument, is readable.
+if [[ "$#" == "2" ]] && ! [[ -r $2 ]];
+then
+	echo "./stats: cannot read $2" 1>&2;
+	rm *$$
+	exit 1;
+fi
+# If two arguments, check that file, identified by second argument, is not empty.
+if [[ "$#" == "2" ]] && ! [[ -s $2 ]];
+then
+	echo "./stats: $2 is empty." 1>&2;
+	rm *$$
+	exit 1;
+fi
+
+
+
+# Get user data based on options.
+inputFile="stdInputFile$$"
+if [ "$#" == "1" ];
+then
+	cat > $inputFile;
+elif [ "$#" == "2" ];
+then
+	inputFile=$2;
+fi
+
+
+# dataFile will either be the inputFile provided in the previous if statement
+# (if calculating based on the -r* option)
+# or created, as a temporary file, as the transpose of inputFile
+# (if calculating based on the -c* option)
+dataFile=""
+if [[ $1 == -r* ]];
+then
+	dataFile=$inputFile
+elif [[ $1 == -c* ]];
+then
+	dataFile="dataFile$$"
+	read -ra array < $inputFile
+	for index in ${!array[@]}
+	do
+		column=`expr $index + 1`	
+		# transpose each returned column from the cut
+		# and append it as a new line to dataFile
+		# Note: only handles tab as the separator between numbers
+		cut -f $column $inputFile | tr '\n' '\t' >> $dataFile
+		echo "" >> $dataFile
+	done
+fi
+# Now we have the dataFile to work with...
+
+
+# sorted numbers string, each number on a separate line, must be defined
+function getMedian {
+	count=${#sorted[@]}
+
+	mid=`expr $count / 2`
+	median=${sorted[$mid]}
+
+	# If sorted array is odd, we need to make sure
+	# that we calculate the correct median.
+	if ! [[ `expr $mid \* 2` -lt $count ]] && [[ $count -ge 2 ]]
+	then
+		firstVal=${sorted[`expr $mid - 1`]}
+		secondVal=${sorted[$mid]}
+
+		if `test $firstVal -gt $secondVal`
+		then median=$firstVal
+		else median=$secondVal
+		fi
+	fi
+
+	echo $median
+}
+
+
+# sorted numbers string, each number on a separate line, must be defined
+function getAverage {
+	total=0
+	for num in "${sorted[@]}"
+	do
+		total=`expr $total + $num`
+	done
+
+	count=${#sorted[@]}
+
+	avg=`expr \( $total + \( $count / 2 \) \) / $count`
+	echo $avg
+}
+
+
+# Read from input.
+# Calculate averages and medians from the lists of numbers
+# and store in temporary files.
+tempMediansFile="tempMedians$$"
+tempAveragesFile="tempAverages$$"
+if [[ $1 == -r* ]]; then printf "Average\tMedian\n"; fi
+while read -a numline
+do
+	# Do the calculations here
+	# and append to an output file as you go.
+	IFS=$'\n'
+	sorted=($(sort -n <<<"${numline[*]}"))
+	unset IFS
+
+	median=`getMedian`
+	average=`getAverage`
+	
+	# Calculations output is formatted differently
+	# depending on whether we are calculating
+	# by rows or columns.
+	if [[ $1 == -r* ]]
+	then
+		printf "$average\t$median\n"
+	else
+		printf "$median\n" >> $tempMediansFile
+		printf "$average\n" >> $tempAveragesFile
+	fi
+done <$dataFile
+
+
+# Formatting columns calculations requires
+# a little extra work.
+if [[ $1 == -c* ]]
+then
+	printf "Averages:\n"
+	for a in `cat $tempAveragesFile`; do
+		printf "$a\t"
+	done
+	printf "\n"
+
+	printf "Medians:\n"
+	for m in `cat $tempMediansFile`; do
+		printf "$m\t"
+	done
+	printf "\n"
+fi
+
+
+# Remove all temporary files
+rm *$$
+
+
+exit 0;
+
