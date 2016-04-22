@@ -85,15 +85,18 @@ void initRoom(char roomName[], int connections) {
  * contain pSrc char array.
  ************************************************************************************/
 int strcat_safe(char destination[], int destCapacity, const char *pSrc) {
-	int capacityNeeded = destCapacity + strlen(pSrc);
+	int capacityNeeded = strlen(destination) + strlen(pSrc) + 1; // add one for null character
+	printf("in strcat_safe...strlen(destination) = %d \n", strlen(destination));
 	printf("in strcat_safe...capacityNeeded = %d \n", capacityNeeded);
 
 	if (destCapacity < capacityNeeded) {
 		return 1;
 	}
+
 	strcat(destination, pSrc);
 	// ensure null termination
-	destination[strlen(destination) - 1] = 0;
+	destination[strlen(destination)] = 0;
+	
 	return 0;
 }
 

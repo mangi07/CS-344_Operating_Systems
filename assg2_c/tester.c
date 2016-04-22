@@ -1,21 +1,26 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "functions.h"
 
 int main(void) {
 
+
+// Setup
+int returnStatus;
+
 /*****************************************************************************
  *  Test isInArray
  ****************************************************************************/
-	int arr[] = {1, 2, 3};
-	int arrSize = 3;
+	//int arr[] = {1, 2, 3};
+	//int arrSize = 3;
 
-	int returnStatus = isInArray(5, arr, arrSize);
-	printf("In tester...isInArray expected: 0, actual: %d \n", returnStatus);
+	//int returnStatus = isInArray(5, arr, arrSize);
+	//printf("In tester...isInArray expected: 0, actual: %d \n", returnStatus);
 
-	returnStatus = isInArray(3, arr, arrSize);
-	printf("In tester...isInArray expected: 1, actual: %d \n", returnStatus);
-	printf("End Test isInArray\n\n");
+	//returnStatus = isInArray(3, arr, arrSize);
+	//printf("In tester...isInArray expected: 1, actual: %d \n", returnStatus);
+	//printf("End Test isInArray\n\n");
 /*****************************************************************************
  *  Test randInRange 
  ****************************************************************************/
@@ -36,12 +41,48 @@ int main(void) {
 /*****************************************************************************
  *  Test strcat_safe
  ****************************************************************************/
-	int SIZE = 3;
-	char buffer[SIZE];
-	char addedText[] = "Thisisalongstrong";
-	returnStatus = strcat_safe(buffer, SIZE, addedText);
+	// capacity too small
+	const int SIZE = 3;
+	char firstBuffer[3] = "";
+	printf("strlen(firstBuffer) = %d \n", strlen(firstBuffer));
+	char addedText[] = "Thisisalongstring"; // 17 characters + null terminator
+	returnStatus = strcat_safe(firstBuffer, SIZE, addedText);
+	printf("Capacity really needed: 18\n");
 	printf("In tester...strcat_safe expected: 1, actual: %d \n", returnStatus);
-	printf("In tester...strcat_safe buffer: %s \n", buffer);
+	printf("In tester...strcat_safe buffer: %s \n", firstBuffer);
+	printf("Number of characters in buffer: %d \n\n", strlen(firstBuffer));
+
+	// capacity plenty big
+	const int NEW_SIZE = 100;
+	char newBuffer[100] = "";
+	returnStatus = strcat_safe(newBuffer, NEW_SIZE, addedText);
+	printf("Capacity really needed: 18\n");
+	printf("In tester...strcat_safe expected: 0, actual: %d \n", returnStatus);
+	printf("In tester...strcat_safe newBuffer expected 'Thisisalongstring', actual: %s \n", newBuffer);
+	printf("Number of characters in buffer: %d \n\n", strlen(newBuffer));
+
+	returnStatus = strcat_safe(newBuffer, NEW_SIZE, addedText);
+	printf("Capacity really needed: 35\n");
+	printf("In tester...strcat_safe expected: 0, actual: %d \n", returnStatus);
+	printf("In tester...strcat_safe newBuffer expected 'ThisisalongstringThisisalongstring', actual: %s \n", newBuffer);
+	printf("Number of characters in buffer: %d \n\n", strlen(newBuffer));
+
+	// edge case: capacity barely enough
+	const int LAST_SIZE = 10;
+	char lastBuffer[10] = "abcd";
+	char lastAdded[] = "efghi";
+	returnStatus = strcat_safe(lastBuffer, LAST_SIZE, lastAdded);
+	printf("Capacity really needed: 10\n");
+	printf("In tester...strcat_safe expected: 0, actual: %d \n", returnStatus);
+	printf("In tester...strcat_safe lastBuffer expected 'abcdefghi', actual: %s \n", lastBuffer);
+	printf("Number of characters in buffer: %d \n\n", strlen(lastBuffer));
+
+	// edge case: capacity one char too short
+	returnStatus = strcat_safe(lastBuffer, LAST_SIZE, "j");
+	printf("Capacity really needed: 11\n");
+	printf("In tester...strcat_safe expected: 1, actual: %d \n", returnStatus);
+	printf("In tester...strcat_safe lastBuffer expected 'abcdefghi', actual: %s \n", lastBuffer);
+	printf("Number of characters in buffer: %d \n\n", strlen(lastBuffer));
 
 
 /*****************************************************************************
