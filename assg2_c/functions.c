@@ -12,6 +12,27 @@
 //int isInArray(int arrElement, int arr[], int size);
 //void initRoom(int index, int connections);
 
+/**********************************************************************
+ * Assigns a subset of allRooms to usedRooms.
+ * Rooms are not assigned if allRooms size is less than usedRooms size.
+ *********************************************************************/
+void chooseRooms( char* allRooms[], int ALL_ROOMS_SIZE, int usedRooms[], int USED_ROOMS_SIZE ) {
+	if ( ALL_ROOMS_SIZE < USED_ROOMS_SIZE ) {
+		printf( "in chooseRooms: ALL_ROOMS_SIZE must be at least 7\n" );
+		exit(1);
+	}
+
+	int allRoomsIndex = randInRange(0, ALL_ROOMS_SIZE - 1);
+	int count = 0;
+	for ( count; count < USED_ROOMS_SIZE; ++count ) {
+		while (isInArray(allRoomsIndex, usedRooms, USED_ROOMS_SIZE - 1)) {
+			allRoomsIndex = randInRange(0, ALL_ROOMS_SIZE);
+		}
+		usedRooms[count] = allRoomsIndex;
+		printf( "usedRooms[%d]: %d\n", count, usedRooms[count] );
+	}
+}
+
 /**************************************************************
  * Returns 0 on success and -1 if not enough rooms are provided.
  * ALL_ROOMS_SIZE must be the size of allRooms array.
@@ -23,26 +44,16 @@ int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE) {
 		return -1;
 	}
 	int usedRooms[] = {-1, -1, -1, -1, -1, -1, -1};
-	int count = 0;
+	chooseRooms( allRooms, ALL_ROOMS_SIZE, usedRooms, USED_ROOMS_SIZE );
 	int connections;
 	int MIN_CONNECTIONS = 3;
 	int MAX_CONNECTIONS = 6;
 
-	// keep track of allRooms indices in usedRooms array
-	// so that each initialized room will have a unique name
-	while (count < USED_ROOMS_SIZE) {
-		int allRoomsIndex = randInRange(0, ALL_ROOMS_SIZE - 1);
-		while (isInArray(allRoomsIndex, usedRooms, USED_ROOMS_SIZE - 1)) {
-			allRoomsIndex = randInRange(0, ALL_ROOMS_SIZE);
-		}
-		int connections = randInRange(MIN_CONNECTIONS, MAX_CONNECTIONS);
-		initRoom(allRooms[allRoomsIndex], connections); // define this later
-		usedRooms[count] = allRoomsIndex;
-		count++;
-		
-		// remove when done with testing
-		printf("In functions.c...makeRooms...allRoomsIndex = %d \n", allRoomsIndex);
+	
 
+	for ( int i = 0; i < USED_ROOMS_SIZE; ++i ) {
+		int connections = randInRange(MIN_CONNECTIONS, MAX_CONNECTIONS);
+		initRoom(usedRooms[i], allRooms, connections); // define this later
 	}
 
 	return 0;	
@@ -70,15 +81,71 @@ int isInArray(int arrElement, int arr[], int size) {
 }
 
 
+// finish
+int countConnections(char room_name[]){
+	return 0;
+}
+
+// finish
+int connectionExists( int room_one_index, int room_two_index, char* rooms[] ) {
+	return 0;
+}
+
+// finish
+/******************************************************************************
+ * Checks to see whether the two rooms identified by index are the same,
+ * and returns 0 if they are (avoiding a room making a connection to itself).
+ *
+ * If the two rooms identified are different, a connection will be made
+ * between them unless the connection already exists.
+ *
+ * If the second room file (identified by rand_index) does not yet exist,
+ * that second room will be created with the connection back to the other room.
+ *****************************************************************************/
+int makeConnection( int first, int second, char* rooms[] ) {
+	if ( first == second )
+		return 1;
+
+	// get room names
+	char *first_room_name = rooms[first];
+	char *second_room_name = rooms[second];
+	
+	// Open room files for reading and writing
+	FILE *first_room_file = fopen( first_room_name, "a+" );
+	FILE *second_room_file = fopen( second_room_name, "a+" );
+	
+	// Close both files
+	fclose( first_room_file );
+	fclose( second_room_file );
+	
+}
+
 //test
-void initRoom(char roomName[], int connections) {
-	int fileDescriptor;
-	char buffer[100];
-	// finish
+/************************************************************************
+ * int room_index	Identifies the room to initialize.
+ * char* rooms[]	Array of room names, each to correspond to a file.
+ * int connections	Total number of connections the room 
+ * 			identified by room_index should have.
+ ***********************************************************************/
+void initRoom(int room_index, char* rooms[], int connections) {
+	char *room_name = rooms[room_index];
+	FILE *file_p = fopen( room_name, "a+" );
+
+	int connections_in_file = countConnections( room_name );
+	int connections_to_make = connections - connections_in_file;
+
+	while ( connections_to_make > 0 ) {
+		int rand_index = randInRange( 0, 7 );
+		if ( makeConnection( room_index, rand_index, rooms ) ) {
+			connections_to_make--;
+		}
+	}
+
+	fclose(file_p);
 }
 
 
-//test
+
 /*************************************************************************************
  * Inspired by https://randomascii.wordpress.com/2013/04/03/stopusingstrncpyalready/ 
  * Returns 1 on error or 0 on success, 1 if destination char array is too small to 

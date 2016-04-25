@@ -10,8 +10,6 @@
 
 int randInRange(int min, int max);
 
-int isInArray(int arrElement, int arr[], int size);
-
 /**************************************************************
  * Returns 0 on success and -1 if not enough rooms are provided.
  * ALL_ROOMS_SIZE must be the size of allRooms array.
@@ -23,7 +21,7 @@ int randInRange(int min, int max);
 
 int isInArray(int arrElement, int arr[], int size);
 
-void initRoom(char roomName[], int connections);
+void initRoom(int room_index, char* rooms[], int connections);
 
 /*************************************************************************************
  * Inspired by https://randomascii.wordpress.com/2013/04/03/stopusingstrncpyalready/ 

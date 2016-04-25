@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "functions.h"
 
 int main(void) {
@@ -33,14 +34,12 @@ int returnStatus;
 	//	randomNumber = randInRange(0, 5);
 	//}
 	//printf("End Test randInRange\n\n");
-/*****************************************************************************
- *  Test initRoom
- ****************************************************************************/
-	
+
 
 /*****************************************************************************
  *  Test strcat_safe
  ****************************************************************************/
+/*
 	// capacity too small
 	const int SIZE = 3;
 	char firstBuffer[3] = "";
@@ -83,7 +82,7 @@ int returnStatus;
 	printf("In tester...strcat_safe expected: 1, actual: %d \n", returnStatus);
 	printf("In tester...strcat_safe lastBuffer expected 'abcdefghi', actual: %s \n", lastBuffer);
 	printf("Number of characters in buffer: %d \n\n", strlen(lastBuffer));
-
+*/
 
 /*****************************************************************************
  *  Test makeRooms
@@ -96,6 +95,18 @@ int returnStatus;
 	//printf("In tester...makeRooms expected: 0, actual: %d \n", returnStatus);
 	//printf("End Test makeRooms\n\n");
 	//
+
+/*****************************************************************************
+ *  Test initRoom
+ ****************************************************************************/
+	char* rooms_2[] = {"blue", "red", "ONE", "TWO", "Big", "Small", "best", "worst", "CARPET", "WOOD"};
+	int SIZE_2 = 10;
+
+
+	srand( time( 0 ) );
+	initRoom(0, rooms_2, 6);
+
+
 
 
 	printf("In tester...end of tests.\n");
