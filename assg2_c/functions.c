@@ -12,24 +12,44 @@
 //int isInArray(int arrElement, int arr[], int size);
 //void initRoom(int index, int connections);
 
+
+/***************************************
+ * Call this function before any others.
+ * Caller must remember to free(name).
+ **************************************/
+void setDirectory(char *name) {
+	// getpid() returns type pit_t which I'm guessing could
+	// be type unsigned int, so 100 chars should be enough
+	// to hold olsonbe.rooms.<pid> where the width of 
+	// the character representation of the pid will probably 
+	// be NO longer than the character width representation 
+	// of the max value of unsigned int.
+	name = malloc( sizeof(char) * 100 );
+	sprintf( name, "%s%ld", "olsonbe.rooms.", getpid() );
+	mkdir( name, ACCESSPERMS );
+	printf( "%s\n", name );
+}
+	
+
+
 /**********************************************************************
  * Assigns a subset of allRooms to usedRooms.
  * Rooms are not assigned if allRooms size is less than usedRooms size.
  *********************************************************************/
-void chooseRooms( char* allRooms[], int ALL_ROOMS_SIZE, int usedRooms[], int USED_ROOMS_SIZE ) {
+void chooseRooms( char* allRooms[], int ALL_ROOMS_SIZE, char* usedRooms[], int USED_ROOMS_SIZE ) {
 	if ( ALL_ROOMS_SIZE < USED_ROOMS_SIZE ) {
 		printf( "in chooseRooms: ALL_ROOMS_SIZE must be at least 7\n" );
 		exit(1);
 	}
 
-	int allRoomsIndex = randInRange(0, ALL_ROOMS_SIZE - 1);
+	char *chosen_room = allRooms[randInRange(0, ALL_ROOMS_SIZE - 1)];
 	int count = 0;
 	for ( count; count < USED_ROOMS_SIZE; ++count ) {
-		while (isInArray(allRoomsIndex, usedRooms, USED_ROOMS_SIZE - 1)) {
-			allRoomsIndex = randInRange(0, ALL_ROOMS_SIZE);
+		while (isInArray(chosen_room, usedRooms, USED_ROOMS_SIZE - 1)) {
+			 chosen_room = allRooms[randInRange(0, ALL_ROOMS_SIZE)];
 		}
-		usedRooms[count] = allRoomsIndex;
-		printf( "usedRooms[%d]: %d\n", count, usedRooms[count] );
+		usedRooms[count] = chosen_room;
+		printf( "usedRooms[%d]: %s\n", count, chosen_room );
 	}
 }
 
@@ -43,17 +63,18 @@ int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE) {
 	if (ALL_ROOMS_SIZE < USED_ROOMS_SIZE) {
 		return -1;
 	}
-	int usedRooms[] = {-1, -1, -1, -1, -1, -1, -1};
+	
+	char * usedRooms[] = {"", "", "", "", "", "", ""};
 	chooseRooms( allRooms, ALL_ROOMS_SIZE, usedRooms, USED_ROOMS_SIZE );
+	// usedRooms array is now filled with unique room names
+	
 	int connections;
 	int MIN_CONNECTIONS = 3;
 	int MAX_CONNECTIONS = 6;
 
-	
-
 	for ( int i = 0; i < USED_ROOMS_SIZE; ++i ) {
 		int connections = randInRange(MIN_CONNECTIONS, MAX_CONNECTIONS);
-		initRoom(usedRooms[i], allRooms, connections); // define this later
+		initRoom(i, usedRooms, connections); // define this later
 	}
 
 	return 0;	
@@ -70,10 +91,10 @@ int randInRange(int min, int max) {
 }
 
 
-int isInArray(int arrElement, int arr[], int size) {
-	int searchIndex;
-	for (searchIndex = 0; searchIndex < size; ++searchIndex) {
-		if (arrElement == arr[searchIndex]) {
+int isInArray(char *room, char * rooms[], int size) {
+	int i;
+	for (i = 0; i < size; ++i) {
+		if ( ! strcmp( room, rooms[i] ) ) {
 			return 1;
 		}
 	}
@@ -104,7 +125,7 @@ int connectionExists( int room_one_index, int room_two_index, char* rooms[] ) {
  *****************************************************************************/
 int makeConnection( int first, int second, char* rooms[] ) {
 	if ( first == second )
-		return 1;
+		return 0;
 
 	// get room names
 	char *first_room_name = rooms[first];
@@ -117,10 +138,12 @@ int makeConnection( int first, int second, char* rooms[] ) {
 	// Close both files
 	fclose( first_room_file );
 	fclose( second_room_file );
-	
+
+	printf( "in makeConnection: first\t%d \tsecond\t%d\n", first, second );
+	return 1;	
 }
 
-//test
+
 /************************************************************************
  * int room_index	Identifies the room to initialize.
  * char* rooms[]	Array of room names, each to correspond to a file.
@@ -167,7 +190,7 @@ int strcat_safe(char destination[], int destCapacity, const char *pSrc) {
 	return 0;
 }
 
-
+/*
 int xmain(void)
 {
 	// test isInArray
@@ -183,3 +206,6 @@ int xmain(void)
 	//makeRooms(rooms, SIZE);
 	exit(0);
 }
+*/
+
+

@@ -99,14 +99,22 @@ int returnStatus;
 /*****************************************************************************
  *  Test initRoom
  ****************************************************************************/
+/*
 	char* rooms_2[] = {"blue", "red", "ONE", "TWO", "Big", "Small", "best", "worst", "CARPET", "WOOD"};
 	int SIZE_2 = 10;
 
 
 	srand( time( 0 ) );
 	initRoom(0, rooms_2, 6);
+*/
 
 
+/******************************************************************************
+ * Test setDirectory
+ *****************************************************************************/
+	char *directory_name;
+	setDirectory(directory_name);
+	free(directory_name);
 
 
 	printf("In tester...end of tests.\n");

@@ -8,6 +8,8 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
+void setDirectory(char *name);
+ 
 int randInRange(int min, int max);
 
 /**************************************************************
@@ -19,7 +21,7 @@ int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE);
 
 int randInRange(int min, int max); 
 
-int isInArray(int arrElement, int arr[], int size);
+int isInArray(char *room, char * rooms[], int size);
 
 void initRoom(int room_index, char* rooms[], int connections);
 
