@@ -7,15 +7,15 @@
 int main(void) {
 
 
-// Setup
-int returnStatus;
-char *directory_name;
-setDirectory( &directory_name );
+	// Setup
+	int returnStatus;
+	char *directory_name;
+	setDirectory( &directory_name );
 
 
-char* rooms[] = {"blue", "red", "ONE", "TWO", "Big", "Small", "best", "worst", "CARPET", "WOOD"};
-// void makeRoomFiles( char* rooms[], char* directory ) {
-makeRoomFiles( rooms, directory_name );
+	char* rooms[] = {"blue", "red", "ONE", "TWO", "Big", "Small", "best", "worst", "CARPET", "WOOD"};
+	// void makeRoomFiles( char* rooms[], char* directory ) {
+	makeRoomFiles( rooms, directory_name );
 
 
 
@@ -150,8 +150,8 @@ makeRoomFiles( rooms, directory_name );
 
 
 
-// void addRoomTypes( char* rooms[], char* directory ) {
-	// addRoomTypes( rooms, directory_name );
+	// void addRoomTypes( char* rooms[], char* directory ) {
+	addRoomTypes( rooms, directory_name );
 
 	free(directory_name);
 	printf("In tester...end of tests.\n");
