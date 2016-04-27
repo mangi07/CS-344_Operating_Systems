@@ -17,17 +17,17 @@
  * Call this function before any others.
  * Caller must remember to free(name).
  **************************************/
-void setDirectory(char *name) {
+void setDirectory(char **name) {
 	// getpid() returns type pit_t which I'm guessing could
 	// be type unsigned int, so 100 chars should be enough
 	// to hold olsonbe.rooms.<pid> where the width of 
 	// the character representation of the pid will probably 
 	// be NO longer than the character width representation 
 	// of the max value of unsigned int.
-	name = malloc( sizeof(char) * 100 );
-	sprintf( name, "%s%ld", "olsonbe.rooms.", getpid() );
-	mkdir( name, ACCESSPERMS );
-	printf( "%s\n", name );
+	*name = ( char* ) malloc( sizeof(char) * 100 );
+	sprintf( *name, "%s%ld", "olsonbe.rooms.", getpid() );
+	mkdir( *name, ACCESSPERMS );
+	printf( "%s\n", *name );
 }
 	
 
@@ -58,7 +58,7 @@ void chooseRooms( char* allRooms[], int ALL_ROOMS_SIZE, char* usedRooms[], int U
  * ALL_ROOMS_SIZE must be the size of allRooms array.
  * Assumes each name in allRooms array is unique.
  *************************************************************/
-int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE) {
+int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE, char* directory) {
 	int USED_ROOMS_SIZE = 7;
 	if (ALL_ROOMS_SIZE < USED_ROOMS_SIZE) {
 		return -1;
@@ -72,9 +72,10 @@ int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE) {
 	int MIN_CONNECTIONS = 3;
 	int MAX_CONNECTIONS = 6;
 
+	int i;
 	for ( int i = 0; i < USED_ROOMS_SIZE; ++i ) {
 		int connections = randInRange(MIN_CONNECTIONS, MAX_CONNECTIONS);
-		initRoom(i, usedRooms, connections); // define this later
+		initRoom(i, usedRooms, connections, directory); // define this later
 	}
 
 	return 0;	
@@ -102,10 +103,24 @@ int isInArray(char *room, char * rooms[], int size) {
 }
 
 
-// finish
-int countConnections(char room_name[]){
-	return 0;
+/**************************************************************
+ * Takes an open file and finds its number of connections
+ *************************************************************/
+int countConnections( FILE *file){
+	// We compensate for two lines in file that don't start with "CONNECTION:..."
+	int connections = -2;
+	rewind( file );
+	char buffer[100];
+	// We count the number of lines in the file.
+	while ( fgets( buffer, sizeof buffer, file ) != NULL ) {
+		connections++;
+	}
+	// At this point, connections should be 2 less than the number of lines in the file,
+	// which should also be the number of connections the file denotes.
+	printf( "in countConnections: connections = %d\n", connections );
+	return connections;
 }
+
 
 // finish
 int connectionExists( int room_one_index, int room_two_index, char* rooms[] ) {
@@ -123,43 +138,81 @@ int connectionExists( int room_one_index, int room_two_index, char* rooms[] ) {
  * If the second room file (identified by rand_index) does not yet exist,
  * that second room will be created with the connection back to the other room.
  *****************************************************************************/
-int makeConnection( int first, int second, char* rooms[] ) {
+int makeConnection( int first, int second, char* rooms[], char* directory ) {
 	if ( first == second )
 		return 0;
 
+	// printf( "in makeConnection: directory: %s\n", directory );
+
 	// get room names
-	char *first_room_name = rooms[first];
-	char *second_room_name = rooms[second];
+	char *first_room = rooms[first];
+	char *second_room = rooms[second];
+	
+	// reserve room for file path strings
+	char first_dir[100] = "";
+	char second_dir[100] = "";
+
+
+	// make directory/file strings
+	strcat_safe( first_dir, 100, directory );
+	strcat_safe( first_dir, 100, "/" );
+	strcat_safe( first_dir, 100, first_room );
+
+	strcat_safe( second_dir, 100, directory );
+	strcat_safe( second_dir, 100, "/" );
+	strcat_safe( second_dir, 100, second_room );
+
 	
 	// Open room files for reading and writing
-	FILE *first_room_file = fopen( first_room_name, "a+" );
-	FILE *second_room_file = fopen( second_room_name, "a+" );
+	FILE *first_room_file = fopen( first_dir, "a+" );
+	FILE *second_room_file = fopen( second_dir, "a+" );
+	if ( ! ( first_room_file && second_room_file ) ) {
+		printf( "in makeConnection: first_dir: %s\n", first_dir );
+		printf( "in makeConnection: second_dir: %s\n", second_dir );
+		printf( "Error opening file(s) in function makeConnection\n" );
+		exit( 1 );
+	}
+ 	
+	// fill this in
+	fprintf( first_room_file, "test line\n" );
+	fprintf( first_room_file, "test line\n" );
+	int c1 = countConnections( first_room_file ) + 1;
+	int c2 = countConnections( second_room_file ) + 1;
+	fprintf( first_room_file, "CONNECTION %d: %s\n", c1, second_room );
+	fprintf( second_room_file,"CONNECTION %d: %s\n", c2, first_room );
 	
 	// Close both files
 	fclose( first_room_file );
 	fclose( second_room_file );
 
-	printf( "in makeConnection: first\t%d \tsecond\t%d\n", first, second );
+	//printf( "in makeConnection: first\t%d \tsecond\t%d\n", first, second );
+	//printf( "in makeConnection: dir1:\t%s \tdir2:\t%s\n\n", first_dir, second_dir );
 	return 1;	
 }
 
 
 /************************************************************************
- * int room_index	Identifies the room to initialize.
+ * int room_index	Identifies the room to add connection(s) to.
  * char* rooms[]	Array of room names, each to correspond to a file.
  * int connections	Total number of connections the room 
  * 			identified by room_index should have.
  ***********************************************************************/
-void initRoom(int room_index, char* rooms[], int connections) {
+void initRoom(int room_index, char* rooms[], int connections, char* directory ) {
 	char *room_name = rooms[room_index];
-	FILE *file_p = fopen( room_name, "a+" );
+	FILE *file_p = NULL;
+	file_p = fopen( room_name, "a+" );
+	// Check for successful file opening.
+	if ( ! file_p ) {
+		printf( "Error opening file in function initRoom!\n" );
+		exit( 1 );
+	}
 
-	int connections_in_file = countConnections( room_name );
+	int connections_in_file = countConnections( file_p );
 	int connections_to_make = connections - connections_in_file;
 
 	while ( connections_to_make > 0 ) {
 		int rand_index = randInRange( 0, 7 );
-		if ( makeConnection( room_index, rand_index, rooms ) ) {
+		if ( makeConnection( room_index, rand_index, rooms, directory ) ) {
 			connections_to_make--;
 		}
 	}
@@ -174,10 +227,19 @@ void initRoom(int room_index, char* rooms[], int connections) {
  * Returns 1 on error or 0 on success, 1 if destination char array is too small to 
  * contain pSrc char array.
  ************************************************************************************/
-int strcat_safe(char destination[], int destCapacity, const char *pSrc) {
+int strcat_safe(char *destination, int destCapacity, char *pSrc) {
+
+	if ( ! ( destination && pSrc ) ) {
+		printf( "in strcat_safe: null string(s) passed in!\n" );
+		exit( 1 );
+	}
+	//printf("%d\n", strlen( pSrc ) );
+
 	int capacityNeeded = strlen(destination) + strlen(pSrc) + 1; // add one for null character
-	printf("in strcat_safe...strlen(destination) = %d \n", strlen(destination));
-	printf("in strcat_safe...capacityNeeded = %d \n", capacityNeeded);
+
+
+	//printf("in strcat_safe...strlen(destination) = %d \n", strlen(destination));
+	//printf("in strcat_safe...capacityNeeded = %d \n", capacityNeeded);
 
 	if (destCapacity < capacityNeeded) {
 		return 1;

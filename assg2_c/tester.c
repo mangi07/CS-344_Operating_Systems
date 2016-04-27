@@ -9,31 +9,39 @@ int main(void) {
 
 // Setup
 int returnStatus;
+char *directory_name;
+setDirectory( &directory_name );
 
 /*****************************************************************************
  *  Test isInArray
  ****************************************************************************/
-	//int arr[] = {1, 2, 3};
-	//int arrSize = 3;
+/*
+	char * string_arr[] = { "one", "two", "three", "four" };
+	int ARR_SIZE = 4;
 
-	//int returnStatus = isInArray(5, arr, arrSize);
-	//printf("In tester...isInArray expected: 0, actual: %d \n", returnStatus);
+	returnStatus = isInArray("two", string_arr, ARR_SIZE);
+	printf("In tester...isInArray expected: 1, actual: %d \n", returnStatus);
 
-	//returnStatus = isInArray(3, arr, arrSize);
-	//printf("In tester...isInArray expected: 1, actual: %d \n", returnStatus);
-	//printf("End Test isInArray\n\n");
+	returnStatus = isInArray("blahblah", string_arr, ARR_SIZE);
+	printf("In tester...isInArray expected: 0, actual: %d \n", returnStatus);
+	printf("End Test isInArray\n\n");
+*/
+
+
 /*****************************************************************************
  *  Test randInRange 
  ****************************************************************************/
-	//int MIN = 0;
-	//int MAX = 5;
-	//int randomNumber = randInRange(MIN, MAX);
-	//srand( time(0) );
-	//for (int i = 0; i < 100; ++i) {
-	//	printf("In tester...randInRange expected in range (%d, %d), actual: %d \n", MIN, MAX, randomNumber);
-	//	randomNumber = randInRange(0, 5);
-	//}
-	//printf("End Test randInRange\n\n");
+/*
+	int MIN = 0;
+	int MAX = 5;
+	int randomNumber = randInRange(MIN, MAX);
+	srand( time(0) );
+	for (int i = 0; i < 100; ++i) {
+		printf("In tester...randInRange expected in range (%d, %d), actual: %d \n", MIN, MAX, randomNumber);
+		randomNumber = randInRange(0, 5);
+	}
+	printf("End Test randInRange\n\n");
+*/
 
 
 /*****************************************************************************
@@ -84,17 +92,29 @@ int returnStatus;
 	printf("Number of characters in buffer: %d \n\n", strlen(lastBuffer));
 */
 
+
 /*****************************************************************************
  *  Test makeRooms
  ****************************************************************************/
-	//char* rooms[] = {"blue", "red", "ONE", "TWO", "Big", "Small", "best", "worst", "CARPET", "WOOD"};
-	//int SIZE = 10;
+/*
+	char* rooms[] = {"blue", "red", "ONE", "TWO", "Big", "Small", "best", "worst", "CARPET", "WOOD"};
+	int SIZE = 10;
 
-	//srand( time(0) );
-	//returnStatus = makeRooms(rooms, SIZE);
-	//printf("In tester...makeRooms expected: 0, actual: %d \n", returnStatus);
-	//printf("End Test makeRooms\n\n");
-	//
+	srand( time(0) );
+	returnStatus = makeRooms(rooms, SIZE);
+	printf("In tester...makeRooms expected: 0, actual: %d \n", returnStatus);
+	printf("End Test makeRooms\n\n");
+*/	
+
+/*****************************************************************************
+ *  Test makeConnection - ON HOLD
+ ****************************************************************************/
+	// int makeConnection( int first, int second, char* rooms[], char* directory ) 
+	char* rooms_2[] = {"blue", "red", "ONE", "TWO", "Big", "Small", "best", "worst", "CARPET", "WOOD"};
+	int SIZE_2 = 10;
+
+	makeConnection( 0, 9, rooms_2, directory_name );
+
 
 /*****************************************************************************
  *  Test initRoom
@@ -105,18 +125,34 @@ int returnStatus;
 
 
 	srand( time( 0 ) );
-	initRoom(0, rooms_2, 6);
+	// initRoom(int room_index, char* rooms[], int connections, char* directory )
+	initRoom(0, rooms_2, 6, directory_name);
 */
 
 
 /******************************************************************************
  * Test setDirectory
  *****************************************************************************/
+/*
 	char *directory_name;
 	setDirectory(directory_name);
 	free(directory_name);
+*/
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+	free(directory_name);
 	printf("In tester...end of tests.\n");
 
 	exit(0);

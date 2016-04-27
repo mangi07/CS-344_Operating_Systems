@@ -8,29 +8,31 @@
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
-void setDirectory(char *name);
+void setDirectory(char **name);
  
 int randInRange(int min, int max);
 
+int makeConnection( int first, int second, char* rooms[], char* directory );
+ 
 /**************************************************************
  * Returns 0 on success and -1 if not enough rooms are provided.
  * ALL_ROOMS_SIZE must be the size of allRooms array.
  * Assumes each name in allRooms array is unique.
  *************************************************************/
-int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE);
+int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE, char *directory );
 
 int randInRange(int min, int max); 
 
 int isInArray(char *room, char * rooms[], int size);
 
-void initRoom(int room_index, char* rooms[], int connections);
+void initRoom(int room_index, char* rooms[], int connections, char *directory );
 
 /*************************************************************************************
  * Inspired by https://randomascii.wordpress.com/2013/04/03/stopusingstrncpyalready/ 
  * Returns 1 on error or 0 on success, 1 if destination char array is too small to 
  * contain pSrc char array.
  ************************************************************************************/
-int strcat_safe(char destination[], int destCapacity, const char *pSrc);
+int strcat_safe(char destination[], int destCapacity, char *pSrc);
 
 #endif
 
