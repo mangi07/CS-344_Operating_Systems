@@ -33,6 +33,10 @@ void initRoom(int room_index, char* rooms[], int connections, char *directory );
  * contain pSrc char array.
  ************************************************************************************/
 int strcat_safe(char destination[], int destCapacity, char *pSrc);
+void makeRoomFiles( char* rooms[], char* directory ); 
+int connectionExists( int room_one_index, int room_two_index, char* rooms[] ); 
+int countConnections( FILE *file);
+void addRoomTypes( char* rooms[], char* directory );
 
 #endif
 

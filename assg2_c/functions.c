@@ -107,16 +107,15 @@ int isInArray(char *room, char * rooms[], int size) {
  * Takes an open file and finds its number of connections
  *************************************************************/
 int countConnections( FILE *file){
-	// We compensate for two lines in file that don't start with "CONNECTION:..."
-	int connections = -2;
+	// We compensate for the first line of the file that indicates room name
+	int connections = -1;
 	rewind( file );
 	char buffer[100];
 	// We count the number of lines in the file.
 	while ( fgets( buffer, sizeof buffer, file ) != NULL ) {
 		connections++;
 	}
-	// At this point, connections should be 2 less than the number of lines in the file,
-	// which should also be the number of connections the file denotes.
+	// At this point, connections should be 1 less than the number of lines in the file,
 	printf( "in countConnections: connections = %d\n", connections );
 	return connections;
 }
@@ -134,9 +133,6 @@ int connectionExists( int room_one_index, int room_two_index, char* rooms[] ) {
  *
  * If the two rooms identified are different, a connection will be made
  * between them unless the connection already exists.
- *
- * If the second room file (identified by rand_index) does not yet exist,
- * that second room will be created with the connection back to the other room.
  *****************************************************************************/
 int makeConnection( int first, int second, char* rooms[], char* directory ) {
 	if ( first == second )
@@ -166,16 +162,19 @@ int makeConnection( int first, int second, char* rooms[], char* directory ) {
 	// Open room files for reading and writing
 	FILE *first_room_file = fopen( first_dir, "a+" );
 	FILE *second_room_file = fopen( second_dir, "a+" );
+
+	
 	if ( ! ( first_room_file && second_room_file ) ) {
 		printf( "in makeConnection: first_dir: %s\n", first_dir );
 		printf( "in makeConnection: second_dir: %s\n", second_dir );
 		printf( "Error opening file(s) in function makeConnection\n" );
 		exit( 1 );
 	}
- 	
-	// fill this in
-	fprintf( first_room_file, "test line\n" );
-	fprintf( first_room_file, "test line\n" );
+
+
+	// CHECK TO SEE IF CONNECTION EXISTS USING FUNCTION!!
+	
+
 	int c1 = countConnections( first_room_file ) + 1;
 	int c2 = countConnections( second_room_file ) + 1;
 	fprintf( first_room_file, "CONNECTION %d: %s\n", c1, second_room );
@@ -200,7 +199,13 @@ int makeConnection( int first, int second, char* rooms[], char* directory ) {
 void initRoom(int room_index, char* rooms[], int connections, char* directory ) {
 	char *room_name = rooms[room_index];
 	FILE *file_p = NULL;
-	file_p = fopen( room_name, "a+" );
+	// need to open in directory, so craft the string here
+	char room_dir[100];
+	strcat_safe( room_dir, 100, directory );
+	strcat_safe( room_dir, 100, "/" );
+	strcat_safe( room_dir, 100, rooms[room_index] );
+
+	file_p = fopen( room_dir, "a+" );
 	// Check for successful file opening.
 	if ( ! file_p ) {
 		printf( "Error opening file in function initRoom!\n" );
@@ -220,6 +225,65 @@ void initRoom(int room_index, char* rooms[], int connections, char* directory ) 
 	fclose(file_p);
 }
 
+
+/******************************************************
+ * Call this function at the beginning to create all
+ * room files and add the first line to each file.
+ *****************************************************/
+void makeRoomFiles( char* rooms[], char* directory ) {
+
+// seg fault somewhere in this function!!
+
+	char room_dir[100];
+	FILE *file_p = NULL;
+	
+	int i;
+	for ( i = 0; i < 7; ++i ) {
+		// prepare directory string
+		strcat_safe( room_dir, 100, directory );
+		strcat_safe( room_dir, 100, "/" );
+		strcat_safe( room_dir, 100, rooms[i] );
+
+		// do initial writes to file
+		file_p = fopen( room_dir, "a+" );
+		fprintf( file_p, "ROOM NAME: %s\n", rooms[i] );
+		fclose( file_p );
+
+		memset( &room_dir[0], 0, sizeof(room_dir) );
+	}
+}
+
+
+/*************************************************************
+ * Call this function at the very end, but we can still use
+ * the files because we know room type by rooms array position
+ ************************************************************/
+void addRoomTypes( char* rooms[], char* directory ) {
+	char room_dir[100];
+	FILE *file_p = NULL;
+	
+	int i;
+	for ( i = 0; i < 7; ++i ) {
+		// prepare directory string
+		strcat_safe( room_dir, 100, directory );
+		strcat_safe( room_dir, 100, "/" );
+		strcat_safe( room_dir, 100, rooms[i] );
+
+		// do final writes to file
+		file_p = fopen( room_dir, "a+" );
+		if (i == 0) {
+			fprintf( file_p, "ROOM TYPE: START_ROOM\n" );
+		} else if (i < 6) {
+			fprintf( file_p, "ROOM TYPE: MID_ROOM\n" );
+		} else {
+			fprintf( file_p, "ROOM TYPE: END_ROOM\n" );
+		}
+		fclose( file_p );
+
+		memset( &room_dir[0], 0, sizeof(room_dir) );
+	}
+
+}
 
 
 /*************************************************************************************

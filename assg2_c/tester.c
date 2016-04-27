@@ -12,6 +12,13 @@ int returnStatus;
 char *directory_name;
 setDirectory( &directory_name );
 
+
+char* rooms[] = {"blue", "red", "ONE", "TWO", "Big", "Small", "best", "worst", "CARPET", "WOOD"};
+// void makeRoomFiles( char* rooms[], char* directory ) {
+makeRoomFiles( rooms, directory_name );
+
+
+
 /*****************************************************************************
  *  Test isInArray
  ****************************************************************************/
@@ -107,13 +114,14 @@ setDirectory( &directory_name );
 */	
 
 /*****************************************************************************
- *  Test makeConnection - ON HOLD
+ *  Test makeConnection
  ****************************************************************************/
 	// int makeConnection( int first, int second, char* rooms[], char* directory ) 
+/*
 	char* rooms_2[] = {"blue", "red", "ONE", "TWO", "Big", "Small", "best", "worst", "CARPET", "WOOD"};
-	int SIZE_2 = 10;
 
 	makeConnection( 0, 9, rooms_2, directory_name );
+*/
 
 
 /*****************************************************************************
@@ -142,15 +150,8 @@ setDirectory( &directory_name );
 
 
 
-
-
-
-
-
-
-
-
-
+// void addRoomTypes( char* rooms[], char* directory ) {
+	// addRoomTypes( rooms, directory_name );
 
 	free(directory_name);
 	printf("In tester...end of tests.\n");
