@@ -71,7 +71,7 @@ int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE, char* directory) {
 	}
 	
 	char * chosenRooms[] = {"", "", "", "", "", "", ""};
-	chooseRooms( allRooms, ALL_ROOMS_SIZE, usedRooms, USED_ROOMS_SIZE );
+	chooseRooms( allRooms, ALL_ROOMS_SIZE, chosenRooms, USED_ROOMS_SIZE );
 	// usedRooms array is now filled with unique room names
 	
 	// add the first line to all the files
@@ -84,7 +84,7 @@ int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE, char* directory) {
 	int i;
 	for ( i = 0; i < USED_ROOMS_SIZE; ++i ) {
 		connections = randInRange(MIN_CONNECTIONS, MAX_CONNECTIONS);
-		initRoom(i, usedRooms, connections, directory);
+		initRoom(i, chosenRooms, connections, directory);
 	}
 
 	// add the last line to all the files
@@ -114,11 +114,11 @@ void chooseRooms( char* allRooms[], int ALL_ROOMS_SIZE, char* usedRooms[], int U
 		exit(1);
 	}
 
-	char *chosen_room = allRooms[randInRange(0, ALL_ROOMS_SIZE - 1)];
+	char *chosen_room = allRooms[randInRange(0, USED_ROOMS_SIZE - 1)];
 	int count = 0;
 	for ( count; count < USED_ROOMS_SIZE; ++count ) {
 		while (isInArray(chosen_room, usedRooms, USED_ROOMS_SIZE - 1)) {
-			 chosen_room = allRooms[randInRange(0, ALL_ROOMS_SIZE)];
+			 chosen_room = allRooms[randInRange(0, ALL_ROOMS_SIZE - 1)];
 		}
 		usedRooms[count] = chosen_room;
 		//printf( "usedRooms[%d]: %s\n", count, chosen_room );
@@ -206,7 +206,7 @@ void initRoom(int room_index, char* rooms[], int connections, char* directory ) 
 	char *room_name = rooms[room_index];
 	FILE *file_p = NULL;
 	// need to open in directory, so craft the string here
-	char room_dir[100];
+	char room_dir[100] = "";
 	strcat_safe( room_dir, 100, directory );
 	strcat_safe( room_dir, 100, "/" );
 	strcat_safe( room_dir, 100, rooms[room_index] );
@@ -222,7 +222,7 @@ void initRoom(int room_index, char* rooms[], int connections, char* directory ) 
 	int connections_to_make = connections - connections_in_file;
 
 	while ( connections_to_make > 0 ) {
-		int rand_index = randInRange( 0, 7 );
+		int rand_index = randInRange( 0, 6 );
 		if ( makeConnection( room_index, rand_index, rooms, directory ) ) {
 			connections_to_make--;
 		}
@@ -238,7 +238,7 @@ void initRoom(int room_index, char* rooms[], int connections, char* directory ) 
 int countConnections( FILE *file){
 	// We compensate for the first line of the file that indicates room name
 	int connections = -1;
-	rewind( file );
+	fseek( file, 0, SEEK_SET );
 	char buffer[100];
 	// We count the number of lines in the file.
 	while ( fgets( buffer, sizeof buffer, file ) != NULL ) {
@@ -248,7 +248,7 @@ int countConnections( FILE *file){
 	//printf( "in countConnections: connections = %d\n", connections );
 	
 	// return file pointer to the end of the file
-	lseek( file, 0, SEEK_END );
+	fseek( file, 0, SEEK_END );
 
 
 	return connections;
@@ -321,8 +321,8 @@ int makeConnection( int first, int second, char* rooms[], char* directory ) {
 
 int connectionExists( FILE *file_1, FILE *file_2, char *room_1, char *room_2 ) {
 	// move both file pointers to the beginning
-	rewind( file_1 );
-	rewind( file_2 );
+	fseek( file_1, 0, SEEK_SET );
+	fseek( file_2, 0, SEEK_SET );
 
 	int first_check = 0;
 	int second_check = 0;
@@ -330,8 +330,9 @@ int connectionExists( FILE *file_1, FILE *file_2, char *room_1, char *room_2 ) {
 	// check first file for second room name
 	char other_1[100] = "";
 	char name_1[100] = "";
-	while( fgets( file_1, "%s: %s\n", other_1, name_1 ) != NULL ) {
-		if ( ! cmpstr( name_1, room_2 ) ) {
+	// or check ( ! feof( file_1 ) )
+	while( fscanf( file_1, "%s: %s\n", other_1, name_1 ) == 2 ) {
+		if ( ! strcmp( name_1, room_2 ) ) {
 			first_check = 1;
 			break;
 		}
@@ -340,16 +341,16 @@ int connectionExists( FILE *file_1, FILE *file_2, char *room_1, char *room_2 ) {
 	// check second file for first room name
 	char other_2[100] = "";
 	char name_2[100] = "";
-	while( fgets( file_2, "%s: %s\n", other_2, name_2 ) != NULL ) {
-		if ( ! cmpstr( name_2, room_1 ) ) {
+	while( fscanf( file_2, "%s: %s\n", other_2, name_2 ) == 2 ) {
+		if ( ! strcmp( name_2, room_1 ) ) {
 			second_check = 1;
 			break;
 		}
 	}
 
 	// return the file pointers to end position
-	lseek( file_1, 0, SEEK_END );
-	lseek( file_2, 0, SEEK_END );
+	fseek( file_1, 0, SEEK_END );
+	fseek( file_2, 0, SEEK_END );
 
 	// a connection exists only if both files indicate the connection
 	return ( first_check && second_check );
