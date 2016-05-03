@@ -8,7 +8,7 @@
 
 
 void setDirectory(char **name); 
-int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE, char* directory);
+int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE, char* directory, char* chosenRooms[], int CHOSEN_ROOMS_SIZE );
 int randInRange(int min, int max); 
 void chooseRooms( char* allRooms[], int ALL_ROOMS_SIZE, char* usedRooms[], int USED_ROOMS_SIZE );
 int isInArray(char *room, char * rooms[], int size); 
@@ -19,24 +19,92 @@ int countConnections( FILE *file);
 int makeConnection( int first, int second, char* rooms[], char* directory ); 
 int connectionExists( FILE *file_1, FILE *file_2, char *room_1, char *room_2 ); 
 void addRoomTypes( char* rooms[], char* directory ); 
-
+void listLocations( char *room, char *directory );
 
  
 int main(void)
 {
+
+	srand(time(0));
+	
 	char* rooms[] = {"blue", "red", "ONE", "TWO", "Big", "Small", "best", "worst", "CARPET", "WOOD"};
 	int SIZE = 10;
+	char * chosenRooms[] = {"", "", "", "", "", "", ""};
+	int CHOSEN_ROOMS_SIZE = 7;
 	
 	char *directory_name;
 	setDirectory( &directory_name );
 
-	makeRooms( rooms, SIZE, directory_name );
+	makeRooms( rooms, SIZE, directory_name, chosenRooms, CHOSEN_ROOMS_SIZE );
 	
 	free(directory_name);
 	
 	printf("In tester...end of tests.\n");
 
 	exit(0);
+}
+
+void listLocations( char *room, char *directory ) {
+	char other_1[100] = "";
+	char other_1a[100] = "";
+	char name[100] = "";
+	
+	char path[100];
+	sprintf( path, "%s/%s", directory, room );
+	FILE *file = fopen( path, "a+" );
+	
+	int connections = countConnections( file ) - 1; // countConnections actually counts the number of lines in file - 1 
+	fseek( file, 0, SEEK_SET );
+	
+	int count = 0;
+	printf( "POSSIBLE CONNECTIONS: " );
+	while( fscanf( file, "%s %s %s\n", other_1, other_1a, name ) == 3 ) {
+		if ( ! strcmp( other_1, "CONNECTION" ) ) {
+			printf( "%s", name );
+			if (count + 1 < connections)
+				printf( ", " );
+			count++;
+		}
+	}
+	printf( ".\n" );
+	
+/*
+	char * connections[7]; // 7 is the max number of connections allowed
+	
+	char path[100];
+	sprintf( path, "%s/%s", directory, room );
+	FILE *file = fopen( path, "a+" );
+	fseek( file, 0, SEEK_SET );
+
+	printf( "POSSIBLE CONNECTIONS: " );
+	int keep_scanning = 1;
+	int count = 0; 
+	while( keep_scanning ) {
+		char *name = (char*) malloc( 100 * sizeof(char) );
+		keep_scanning = ( fscanf( file, "%s %s %s\n", other_1, other_1a, name ) == 3 );
+		if ( ! strcmp( other_1, "CONNECTION" ) ) {
+			connections[count] = name;
+			count++;
+		} else {
+			free( name );
+		}
+	}
+	int i = 0;
+	for (i; i < count; ++i) {
+		printf( "%s", connections[i]);
+		if (i + 1 < count)
+			printf( ", " );
+	}
+	printf( ".\n" );
+	
+	// clean things up
+	for( i = 0; i < count; ++i) {
+		free( connections[count] );
+	}
+*/
+	fclose( file );
+	
+
 }
 
 
@@ -64,15 +132,16 @@ void setDirectory(char **name) {
  * ALL_ROOMS_SIZE must be the size of allRooms array.
  * Assumes each name in allRooms array is unique.
  *************************************************************/
-int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE, char* directory) {
-	int USED_ROOMS_SIZE = 7;
-	if (ALL_ROOMS_SIZE < USED_ROOMS_SIZE) {
+int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE, char* directory, 
+			  char* chosenRooms[], int CHOSEN_ROOMS_SIZE ) {
+	//int USED_ROOMS_SIZE = 7;
+	if (ALL_ROOMS_SIZE < CHOSEN_ROOMS_SIZE) {
 		return -1;
 	}
 	
-	char * chosenRooms[] = {"", "", "", "", "", "", ""};
-	chooseRooms( allRooms, ALL_ROOMS_SIZE, chosenRooms, USED_ROOMS_SIZE );
-	// usedRooms array is now filled with unique room names
+	//char * chosenRooms[] = {"", "", "", "", "", "", ""};
+	chooseRooms( allRooms, ALL_ROOMS_SIZE, chosenRooms, CHOSEN_ROOMS_SIZE );
+	// chosenRooms array is now filled with unique room names
 	
 	// add the first line to all the files
 	makeRoomFiles( chosenRooms, directory ); 
@@ -82,7 +151,7 @@ int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE, char* directory) {
 	int MIN_CONNECTIONS = 3;
 	int MAX_CONNECTIONS = 6;
 	int i;
-	for ( i = 0; i < USED_ROOMS_SIZE; ++i ) {
+	for ( i = 0; i < CHOSEN_ROOMS_SIZE; ++i ) {
 		connections = randInRange(MIN_CONNECTIONS, MAX_CONNECTIONS);
 		initRoom(i, chosenRooms, connections, directory);
 	}
@@ -90,7 +159,11 @@ int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE, char* directory) {
 	// add the last line to all the files
 	addRoomTypes( chosenRooms, directory ); 
 	
-
+	for(i = 0; i < 7; ++i) {
+		listLocations( chosenRooms[i], directory );
+	}
+	
+	
 	return 0;	
 }
 
@@ -329,9 +402,10 @@ int connectionExists( FILE *file_1, FILE *file_2, char *room_1, char *room_2 ) {
 
 	// check first file for second room name
 	char other_1[100] = "";
+	char other_1a[100] = "";
 	char name_1[100] = "";
 	// or check ( ! feof( file_1 ) )
-	while( fscanf( file_1, "%s: %s\n", other_1, name_1 ) == 2 ) {
+	while( fscanf( file_1, "%s %s %s\n", other_1, other_1a, name_1 ) == 3 ) {
 		if ( ! strcmp( name_1, room_2 ) ) {
 			first_check = 1;
 			break;
@@ -340,8 +414,9 @@ int connectionExists( FILE *file_1, FILE *file_2, char *room_1, char *room_2 ) {
 
 	// check second file for first room name
 	char other_2[100] = "";
+	char other_2a[100] = "";
 	char name_2[100] = "";
-	while( fscanf( file_2, "%s: %s\n", other_2, name_2 ) == 2 ) {
+	while( fscanf( file_2, "%s %s %s\n", other_2, other_2a, name_2 ) == 3 ) {
 		if ( ! strcmp( name_2, room_1 ) ) {
 			second_check = 1;
 			break;
