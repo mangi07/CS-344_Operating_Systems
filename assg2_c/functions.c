@@ -46,7 +46,7 @@ int main(void)
 										// (the last chosen room is always END_ROOM)
 	
 	struct Moves* moves = (struct Moves*) malloc( sizeof( struct Moves ) );
-	moves->room = curr_loc;
+	stpcpy( moves->room, curr_loc);
 	moves->next = NULL;
 	
 	int isEnd = 0;
@@ -62,10 +62,10 @@ int main(void)
 		}
 	}
 	
-	while( moves->next != NULL ) {
+	do {
 		printf( "moves: %s\n", moves->room );
 		moves = moves->next;
-	}
+	} while ( moves->next != NULL );
 	
 	//clean up
 	free( directory_name );
@@ -74,7 +74,9 @@ int main(void)
 	for ( i = 0; i < CHOSEN_ROOMS_SIZE; ++i ) {
 		free( chosenRooms[i] );
 	}
-	// Clean up moves here.
+	while( moves->next != NULL ) {
+		// need to free tail first
+	}
 	
 	printf("In tester...end of tests.\n");
 
