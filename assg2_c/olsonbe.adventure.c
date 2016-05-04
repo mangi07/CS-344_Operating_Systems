@@ -22,7 +22,7 @@ void makeRoomFiles( char* rooms[], char* directory );
 int strcat_safe(char *destination, int destCapacity, char *pSrc);
 void initRoom(int room_index, char* rooms[], int connections, char* directory );
 int countConnections( FILE *file);
-int makeConnection( int first, int second, char* rooms[], char* directory ); 
+int makeConnection( int first, int second, char* rooms[], char* directory, FILE* first_room_file ); 
 int connectionExists( FILE *file_1, FILE *file_2, char *room_1, char *room_2 ); 
 void addRoomTypes( char* rooms[], char* directory ); 
 void listLocations( char *room, char *directory );
@@ -45,12 +45,12 @@ int main(void)
 	// initialize some variables and set up room files
 	setDirectory( &directory_name );
 	makeRooms( rooms, SIZE, directory_name, chosenRooms, CHOSEN_ROOMS_SIZE );
-	char* curr_loc = (char*)malloc( 100 * sizeof(char) );
-	strcpy( curr_loc, chosenRooms[0] );	// the first chosen room is always START_ROOM
-										// (the last chosen room is always END_ROOM)
+	// the first chosen room is always START_ROOM
+	// (the last chosen room is always END_ROOM)
+	char* curr_loc = chosenRooms[0];
 	
 	struct Moves* moves = (struct Moves*) malloc( sizeof( struct Moves ) );
-	stpcpy( moves->room, curr_loc);
+	moves->room = curr_loc;
 	moves->next = NULL;
 	int moves_count = 0;
 	int* moves_count_p = &moves_count;
@@ -139,7 +139,7 @@ void promptUser( char **room, char* directory, struct Moves* moves, int* moves_c
 			return; 
 		}
 	}
-	printf( "\nHUH? I DON'T UNDERSTAND THAT ROOM. TRY AGAIN.\n\n" );
+	printf( "\nHUH? I DON'T UNDERSTAND THAT ROOM. TRY AGAIN.\n" );
 	fclose( file );
 	
 }
@@ -168,8 +168,11 @@ void listLocations( char *room, char *directory ) {
 	char other_1a[100] = "";
 	char name[100] = "";
 	
-	char path[100];
-	sprintf( path, "%s/%s", directory, room );
+	char path[100] = "";
+	// prepare directory string
+	strcat_safe( path, 100, directory );
+	strcat_safe( path, 100, "/" );
+	strcat_safe( path, 100, room );
 	FILE *file = fopen( path, "a+" );
 	
 	int connections = countConnections( file ) - 1; // countConnections actually counts the number of lines in file - 1 
@@ -369,7 +372,7 @@ void initRoom(int room_index, char* rooms[], int connections, char* directory ) 
 
 	while ( connections_to_make > 0 ) {
 		int rand_index = randInRange( 0, 6 );
-		if ( makeConnection( room_index, rand_index, rooms, directory ) ) {
+		if ( makeConnection( room_index, rand_index, rooms, directory, file_p ) ) {
 			connections_to_make--;
 		}
 	}
@@ -407,7 +410,7 @@ int countConnections( FILE *file){
  * If the two rooms identified are different, a connection will be made
  * between them unless the connection already exists.
  *****************************************************************************/
-int makeConnection( int first, int second, char* rooms[], char* directory ) {
+int makeConnection( int first, int second, char* rooms[], char* directory, FILE* first_room_file ) {
 	if ( first == second )
 		return 0;
 
@@ -416,29 +419,21 @@ int makeConnection( int first, int second, char* rooms[], char* directory ) {
 	char *second_room = rooms[second];
 	
 	// reserve room for file path strings
-	char first_dir[100] = "";
 	char second_dir[100] = "";
 
-
-	// make directory/file strings
-	strcat_safe( first_dir, 100, directory );
-	strcat_safe( first_dir, 100, "/" );
-	strcat_safe( first_dir, 100, first_room );
-
+	
 	strcat_safe( second_dir, 100, directory );
 	strcat_safe( second_dir, 100, "/" );
 	strcat_safe( second_dir, 100, second_room );
 
 	
 	// Open room files for reading and writing
-	FILE *first_room_file = fopen( first_dir, "a+" );
 	FILE *second_room_file = fopen( second_dir, "a+" );
 
 	
 	if ( ! ( first_room_file && second_room_file ) ) {
-		printf( "in makeConnection: first_dir: %s\n", first_dir );
 		printf( "in makeConnection: second_dir: %s\n", second_dir );
-		printf( "Error opening file(s) in function makeConnection\n" );
+		printf( "Error opening file in function makeConnection\n" );
 		exit( 1 );
 	}
 
@@ -453,8 +448,7 @@ int makeConnection( int first, int second, char* rooms[], char* directory ) {
 	fprintf( first_room_file, "CONNECTION %d: %s\n", c1, second_room );
 	fprintf( second_room_file,"CONNECTION %d: %s\n", c2, first_room );
 	
-	// Close both files
-	fclose( first_room_file );
+	// Close only the file this function opened
 	fclose( second_room_file );
 
 	return 1;	
