@@ -6,10 +6,12 @@
 #include <fcntl.h>
 #include <string.h>
 
+
 struct Moves {
 	char* room;
 	struct Moves* next;
 };
+
 
 void setDirectory(char **name); 
 int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE, char* directory, char* chosenRooms[], int CHOSEN_ROOMS_SIZE );
@@ -25,8 +27,10 @@ int connectionExists( FILE *file_1, FILE *file_2, char *room_1, char *room_2 );
 void addRoomTypes( char* rooms[], char* directory ); 
 void listLocations( char *room, char *directory );
 void presentCurrentLocation( char *loc );
-void promptUser( char **room, char* directory, struct Moves* moves );
+void promptUser( char **room, char* directory, struct Moves* moves, int* moves_count );
 void recordMove( char* room, struct Moves* moves );
+void printEndingMessage( struct Moves* moves, int moves_count );
+
 
 int main(void)
 {
@@ -48,24 +52,23 @@ int main(void)
 	struct Moves* moves = (struct Moves*) malloc( sizeof( struct Moves ) );
 	stpcpy( moves->room, curr_loc);
 	moves->next = NULL;
+	int moves_count = 0;
+	int* moves_count_p = &moves_count;
+	
 	
 	int isEnd = 0;
 	while ( ! isEnd ) {
 		presentCurrentLocation( curr_loc );
 		listLocations( curr_loc, directory_name );
-		promptUser( &curr_loc, directory_name, moves );
+		promptUser( &curr_loc, directory_name, moves, moves_count_p );
 		// Check if user is in END_ROOM
 		if ( ! strcmp( curr_loc, chosenRooms[CHOSEN_ROOMS_SIZE - 1] ) ) {
-			// print ending message
+			printEndingMessage( moves, moves_count );
 			// break out of while loop
 			isEnd = 1;
 		}
 	}
 	
-	do {
-		printf( "moves: %s\n", moves->room );
-		moves = moves->next;
-	} while ( moves->next != NULL );
 	
 	//clean up
 	free( directory_name );
@@ -75,20 +78,39 @@ int main(void)
 		free( chosenRooms[i] );
 	}
 	while( moves->next != NULL ) {
-		// need to free tail first
+		struct Moves* temp = moves->next;
+		free( moves );
+		moves = temp;
 	}
-	
-	printf("In tester...end of tests.\n");
+	free( moves );
 
 	exit(0);
+}
+
+void printEndingMessage( struct Moves* moves, int moves_count ) {
+	printf( "\nYOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n" );
+	printf( "YOU TOOK %d STEPS. YOUR PATH TO VICTORY WAS:\n", moves_count );
+	
+	if ( moves->next == NULL ) {
+		printf( "Internal error: There must be at least two moves!\n" );
+		exit( 1 );
+	} else {
+		moves = moves->next;
+	}
+	
+	do {
+		printf( "%s\n", moves->room );
+		moves = moves->next;
+	} while ( moves->next != NULL );
+	printf( "%s\n", moves->room );
 }
 
 /***************************************************
  * room is user's current location
  * directory is the room's file directory
  **************************************************/
-void promptUser( char **room, char* directory, struct Moves* moves ) {
-	printf( "\nWHERE TO?>" );
+void promptUser( char **room, char* directory, struct Moves* moves, int* moves_count ) {
+	printf( "WHERE TO?>" );
 	char to[100] = "";
 	fgets( to, 100, stdin );
 	
@@ -113,10 +135,11 @@ void promptUser( char **room, char* directory, struct Moves* moves ) {
 			*room = name;
 			recordMove( *room, moves );
 			fclose( file );
+			(*moves_count)++;
 			return; 
 		}
 	}
-	printf( "\nHUH? I DON'T UNDERSTAND THAT ROOM. TRY AGAIN.\n" );
+	printf( "\nHUH? I DON'T UNDERSTAND THAT ROOM. TRY AGAIN.\n\n" );
 	fclose( file );
 	
 }
@@ -137,7 +160,7 @@ void recordMove( char* room, struct Moves* moves ) {
 
 
 void presentCurrentLocation( char *loc ) {
-	printf( "CURRENT LOCATION: %s\n", loc );
+	printf( "\nCURRENT LOCATION: %s\n", loc );
 }
 
 void listLocations( char *room, char *directory ) {
