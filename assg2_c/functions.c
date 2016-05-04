@@ -6,6 +6,10 @@
 #include <fcntl.h>
 #include <string.h>
 
+struct Moves {
+	char* room;
+	struct Moves* next;
+};
 
 void setDirectory(char **name); 
 int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE, char* directory, char* chosenRooms[], int CHOSEN_ROOMS_SIZE );
@@ -20,28 +24,118 @@ int makeConnection( int first, int second, char* rooms[], char* directory );
 int connectionExists( FILE *file_1, FILE *file_2, char *room_1, char *room_2 ); 
 void addRoomTypes( char* rooms[], char* directory ); 
 void listLocations( char *room, char *directory );
+void presentCurrentLocation( char *loc );
+void promptUser( char **room, char* directory, struct Moves* moves );
+void recordMove( char* room, struct Moves* moves );
 
- 
 int main(void)
 {
 
 	srand(time(0));
 	
-	char* rooms[] = {"blue", "red", "ONE", "TWO", "Big", "Small", "best", "worst", "CARPET", "WOOD"};
 	int SIZE = 10;
-	char * chosenRooms[] = {"", "", "", "", "", "", ""};
+	char* rooms[] = {"blue", "red", "ONE", "TWO", "Big", "Small", "best", "worst", "CARPET", "WOOD"};
 	int CHOSEN_ROOMS_SIZE = 7;
-	
+	char * chosenRooms[] = { "", "", "", "", "", "", "" };
 	char *directory_name;
+	// initialize some variables and set up room files
 	setDirectory( &directory_name );
-
 	makeRooms( rooms, SIZE, directory_name, chosenRooms, CHOSEN_ROOMS_SIZE );
+	char* curr_loc = (char*)malloc( 100 * sizeof(char) );
+	strcpy( curr_loc, chosenRooms[0] );	// the first chosen room is always START_ROOM
+										// (the last chosen room is always END_ROOM)
 	
-	free(directory_name);
+	struct Moves* moves = (struct Moves*) malloc( sizeof( struct Moves ) );
+	moves->room = curr_loc;
+	moves->next = NULL;
+	
+	int isEnd = 0;
+	while ( ! isEnd ) {
+		presentCurrentLocation( curr_loc );
+		listLocations( curr_loc, directory_name );
+		promptUser( &curr_loc, directory_name, moves );
+		// Check if user is in END_ROOM
+		if ( ! strcmp( curr_loc, chosenRooms[CHOSEN_ROOMS_SIZE - 1] ) ) {
+			// print ending message
+			// break out of while loop
+			isEnd = 1;
+		}
+	}
+	
+	while( moves->next != NULL ) {
+		printf( "moves: %s\n", moves->room );
+		moves = moves->next;
+	}
+	
+	//clean up
+	free( directory_name );
+	free( curr_loc );
+	int i;
+	for ( i = 0; i < CHOSEN_ROOMS_SIZE; ++i ) {
+		free( chosenRooms[i] );
+	}
+	// Clean up moves here.
 	
 	printf("In tester...end of tests.\n");
 
 	exit(0);
+}
+
+/***************************************************
+ * room is user's current location
+ * directory is the room's file directory
+ **************************************************/
+void promptUser( char **room, char* directory, struct Moves* moves ) {
+	printf( "\nWHERE TO?>" );
+	char to[100] = "";
+	fgets( to, 100, stdin );
+	
+	// replace '\n' with '\0' for string comparison
+	char *newline;
+	int index;
+	newline = strchr(to, '\n');
+	index = (int)(newline - to);
+	to[index] = '\0';
+	
+	char path[100];
+	sprintf( path, "%s/%s", directory, *room );
+	FILE *file = fopen( path, "r" );
+	
+	char other_1[100] = "";
+	char other_1a[100] = "";
+	char *name = (char*)malloc( 100 * sizeof(char) );
+	while( fscanf( file, "%s %s %s\n", other_1, other_1a, name ) == 3 ) {
+		if ( ! strcmp( other_1, "CONNECTION" ) && 
+			 ! strcmp( name, to ) ) {
+			free( *room );
+			*room = name;
+			recordMove( *room, moves );
+			fclose( file );
+			return; 
+		}
+	}
+	printf( "\nHUH? I DON'T UNDERSTAND THAT ROOM. TRY AGAIN.\n" );
+	fclose( file );
+	
+}
+
+
+void recordMove( char* room, struct Moves* moves ) {
+	struct Moves *new_move = (struct Moves*) malloc( sizeof( struct Moves ) );
+	new_move->room = (char*)malloc( 100 * sizeof(char) );
+	strcpy( new_move->room, room );
+	new_move->next = NULL;
+	
+	while( moves->next != NULL ) {
+		moves = moves->next;
+	}
+	// Now we can add a new move to the end.
+	moves->next = new_move;
+}
+
+
+void presentCurrentLocation( char *loc ) {
+	printf( "CURRENT LOCATION: %s\n", loc );
 }
 
 void listLocations( char *room, char *directory ) {
@@ -56,6 +150,7 @@ void listLocations( char *room, char *directory ) {
 	int connections = countConnections( file ) - 1; // countConnections actually counts the number of lines in file - 1 
 	fseek( file, 0, SEEK_SET );
 	
+	
 	int count = 0;
 	printf( "POSSIBLE CONNECTIONS: " );
 	while( fscanf( file, "%s %s %s\n", other_1, other_1a, name ) == 3 ) {
@@ -68,43 +163,7 @@ void listLocations( char *room, char *directory ) {
 	}
 	printf( ".\n" );
 	
-/*
-	char * connections[7]; // 7 is the max number of connections allowed
-	
-	char path[100];
-	sprintf( path, "%s/%s", directory, room );
-	FILE *file = fopen( path, "a+" );
-	fseek( file, 0, SEEK_SET );
-
-	printf( "POSSIBLE CONNECTIONS: " );
-	int keep_scanning = 1;
-	int count = 0; 
-	while( keep_scanning ) {
-		char *name = (char*) malloc( 100 * sizeof(char) );
-		keep_scanning = ( fscanf( file, "%s %s %s\n", other_1, other_1a, name ) == 3 );
-		if ( ! strcmp( other_1, "CONNECTION" ) ) {
-			connections[count] = name;
-			count++;
-		} else {
-			free( name );
-		}
-	}
-	int i = 0;
-	for (i; i < count; ++i) {
-		printf( "%s", connections[i]);
-		if (i + 1 < count)
-			printf( ", " );
-	}
-	printf( ".\n" );
-	
-	// clean things up
-	for( i = 0; i < count; ++i) {
-		free( connections[count] );
-	}
-*/
 	fclose( file );
-	
-
 }
 
 
@@ -139,7 +198,6 @@ int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE, char* directory,
 		return -1;
 	}
 	
-	//char * chosenRooms[] = {"", "", "", "", "", "", ""};
 	chooseRooms( allRooms, ALL_ROOMS_SIZE, chosenRooms, CHOSEN_ROOMS_SIZE );
 	// chosenRooms array is now filled with unique room names
 	
@@ -158,11 +216,6 @@ int makeRooms(char* allRooms[], int ALL_ROOMS_SIZE, char* directory,
 
 	// add the last line to all the files
 	addRoomTypes( chosenRooms, directory ); 
-	
-	for(i = 0; i < 7; ++i) {
-		listLocations( chosenRooms[i], directory );
-	}
-	
 	
 	return 0;	
 }
@@ -187,14 +240,16 @@ void chooseRooms( char* allRooms[], int ALL_ROOMS_SIZE, char* usedRooms[], int U
 		exit(1);
 	}
 
-	char *chosen_room = allRooms[randInRange(0, USED_ROOMS_SIZE - 1)];
+	char *random_room = allRooms[randInRange(0, USED_ROOMS_SIZE - 1)];
 	int count = 0;
+	char *chosen_room = NULL;
 	for ( count; count < USED_ROOMS_SIZE; ++count ) {
-		while (isInArray(chosen_room, usedRooms, USED_ROOMS_SIZE - 1)) {
-			 chosen_room = allRooms[randInRange(0, ALL_ROOMS_SIZE - 1)];
+		while (isInArray(random_room, usedRooms, USED_ROOMS_SIZE - 1)) {
+			 random_room = allRooms[randInRange(0, ALL_ROOMS_SIZE - 1)];
 		}
+		chosen_room = (char*)malloc( 100 * sizeof(char) );
+		strcpy( chosen_room, random_room );
 		usedRooms[count] = chosen_room;
-		//printf( "usedRooms[%d]: %s\n", count, chosen_room );
 	}
 
 }
