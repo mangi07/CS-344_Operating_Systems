@@ -14,16 +14,17 @@ struct command {
 	char* name;
 	char** args;
 	int argc;
-	int out_redir;
-	char* out_file;
-	int in_redir;
-	char* in_file;
-	int background;
+	int redir; // if assigned, should be either OUT_FILE or IN_FILE
+	char* file;
+	int isBackground;
 };
+
+static const int OUT_FILE = 1;
+static const int IN_FILE = -1;
 
 int main(int argc, char **argv) {
 
-	printf( ":\n" );
+	printf( ": " );
 
 	const int MAXARGS = 512;
 	
@@ -35,35 +36,44 @@ int main(int argc, char **argv) {
 
 	// Get command input into a buffer
 	char buffer[2048] = {0};
-
-	// Get args and fill argument struct
-	if ( argc >= 2 ) { // should be the command itself
-		C.name = argv[1];
+	if ( fgets( buffer, sizeof(buffer), stdin ) == NULL ) {
+		perror( "fgets" );
+		exit( 1 );
 	}
-	int i = 0;
-	int offset = 2;
-	while ( i < MAXARGS - offset && 
-		i < argc - offset &&
-		strcmp( argv[i], "<" ) != 0 &&
-		strcmp( argv[i], ">" ) != 0 &&
-		strcmp( argv[i], "&" ) != 0 ) {
-		// Do stuff here
-		C.args[i] = argv[i + offset];
-		printf( "C.args[%d] = %s\n", i, argv[i] ); // debug
-		C.argc++;
-		i++;
+	int len = strlen(buffer);
+	if ( len > 0 && buffer[ len - 1 ] == '\n' ) {
+		buffer[ len - 1 ] = '\0';
 	}
-	
-	// this is debug stuff	
-	if ( C.name != NULL ) {
-		printf( "%s\n", C.name );
+	// check whether this command is a background process
+	len = strlen(buffer);
+	if ( buffer[ len - 1 ] == '&' ) {
+		C.isBackground = 1;
+		buffer[ len - 1 ] = '\0';
 	}
-	/*
-	int j;
-	for ( j = 0; j < C.argc; j++ ) {
-		printf( "%s\n", argv[j] );
+		
+	char *next_word = strtok( buffer, " " );
+	char *command = NULL;
+	if ( next_word == NULL || next_word[0] == '#' ) {
+		// return from function yet to be extracted
+		// and indicate somehow that no command was given
+	} else {
+		C.name = next_word;
 	}
-	*/
+	int args_count = 0;
+	while ( next_word != NULL && args_count < MAXARGS &&
+		next_word[0] != '<' &&
+		next_word[0] != '>' ) {
+		// printf( "%s\n", next_word );
+		next_word = strtok( NULL, " " );
+		C.args[ args_count ] = next_word;
+		if ( C.args[ args_count ] != NULL ) args_count++;
+		C.argc = args_count;
+	}
+	if ( next_word != NULL && next_word == "<" ) {
+		C.redir = IN_FILE;
+	} else if ( next_word != NULL && next_word == ">" ) {
+		C.redir = OUT_FILE;
+	}
 
 	free( C.args );
 	
