@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
 		C.isBackground = 1;
 		buffer[ len - 1 ] = '\0';
 	}
-		
+	
 	char *next_word = strtok( buffer, " " );
 	char *command = NULL;
 	if ( next_word == NULL || next_word[0] == '#' ) {
