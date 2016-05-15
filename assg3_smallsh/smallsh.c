@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
 				if (WIFEXITED(status)) {
 					int exitstatus = WEXITSTATUS(status);
 					printf("exit value %d\n", exitstatus);
-				} else { 
+				} else if ( WIFSIGNALED( status ) ) {
 					// if there was a signal caught (should be caught elsewhere), print out the signal instead
 					printf("Child terminated by a signal\n");
 				}
