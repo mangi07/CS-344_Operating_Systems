@@ -22,6 +22,13 @@ struct command {
 };
 typedef struct command Command;
 
+struct b_pid {
+	int pid;
+	struct b_pid *next;
+};
+typedef struct b_pid B_pid;
+
+
 static const int OUT_FILE = 1;
 static const int IN_FILE = -1;
 static const int MAXARGS = 512;
@@ -49,13 +56,7 @@ void getCommand( Command *C ) {
 	if ( len > 0 && buffer[ len - 1 ] == '\n' ) {
 		buffer[ len - 1 ] = '\0';
 	}
-	// check whether this command is to be a background process
-	len = strlen(buffer);
-	if ( len >= 1 && buffer[ len - 1 ] == '&' ) {
-		C->isBackground = 1;
-		buffer[ len - 1 ] = '\0';
-	}
-
+	
 	char *next_word = strtok( buffer, " " );
 	char *command = NULL;
 	if ( next_word == NULL || next_word[0] == '#' ) {
@@ -70,36 +71,56 @@ void getCommand( Command *C ) {
 			next_word[0] != '<' &&
 			next_word[0] != '>' ) {
 		next_word = strtok( NULL, " " );
-		C->args[ args_count ] = next_word;
-		if ( C->args[ args_count ] != NULL ) args_count++;
-		C->argc = args_count;
+		if ( next_word != NULL ) {
+			C->args[ args_count ] = next_word;
+			args_count++;
+		}
 	}
+	C->argc = args_count;
 	C->args[ args_count ] == NULL;
-	args_count++;
+
 	if ( next_word != NULL && next_word == "<" ) {
 		C->redir = IN_FILE;
 	} else if ( next_word != NULL && next_word == ">" ) {
 		C->redir = OUT_FILE;
 	}
-
+	
+	// check whether this command is to be a background process
+	if ( args_count > 1 && strcmp( C->args[ args_count-1 ], "&" ) == 0 ) {
+		C->isBackground = 1;
+		C->args[ args_count-1 ] = NULL;
+		C->argc--;
+	}
 }
 
 
 int main(int argc, char **argv) {
 
+	// initialize a linked list for background pids
+	// as LIFO, inserting each new element at the head
+	B_pid *b_pids_head = 0;
+
+	/* signals */
+	struct sigaction parent_act, child_act;
+	parent_act.sa_handler = SIG_IGN;
+	sigaction( SIGINT, &parent_act, NULL );
+
 	Command C;
 	Command *C_ptr = &C;
 	int status = -5;
-	// declare array of background pids here
+	int exit_status = -5;
 
 	int shouldRepeat = 1;
 	while ( shouldRepeat ) {
 		// TODO check any background processes here: refer to lecture 9, p 21, 4th bullet point
 		getCommand( C_ptr );
 		// exit implemented here
+
 		if ( C.name != NULL && strcmp( C.name, "exit" ) == 0 ) {
 			shouldRepeat = 0;
 			// Note: You must kill all processes and jobs started by this shell here!!
+			// TODO go through linked list and kill all running processes with kill()
+			
 		} else if ( C.name != NULL && strcmp( C.name, "cd" ) == 0 ) { 
 			// cd implemented here
 			char *home = getenv( "HOME" );
@@ -132,15 +153,13 @@ int main(int argc, char **argv) {
 			// status implemented here
 			// print out the exit status OR terminating signal of the last FOREGROUND process
 			if ( status >= 0 ) { // status has been set by the last FOREGROUND process
-				// printf( "exit value %d\n", status );
-
 				// TODO or use this example from lecture 9, p 20
 				if (WIFEXITED(status)) {
 					int exitstatus = WEXITSTATUS(status);
 					printf("exit value %d\n", exitstatus);
 				} else if ( WIFSIGNALED( status ) ) {
 					// if there was a signal caught (should be caught elsewhere), print out the signal instead
-					printf("Child terminated by a signal\n");
+					printf("terminated by signal %d\n", status);
 				}
 			}	
 		} else if ( C.name == NULL ) {
@@ -151,10 +170,8 @@ int main(int argc, char **argv) {
 			pid_t spawnpid = -5;
 			pid_t w_pid = -5;
 
-			int ten = 10;
-			printf( "This should only show if we are in the parent!\n" );
+			printf( "In the parent right before the fork\n" );
 
-			printf( "C.name right before the fork: %s\n", C.name );
 			spawnpid = fork();
 
 			switch (spawnpid)
@@ -166,8 +183,10 @@ int main(int argc, char **argv) {
 				case 0: // child, where command is executed, whether foreground or background
 					// must be a command other than cd, status, or exit
 					printf( "I am the child!\n" );
-					// change execlp to execv or execvp, as shown in lecture 9, p 34,
-					printf( "C.name in the child: %s\n", C.name );
+
+					/* signals */
+					if ( ! C.isBackground ) sigaction( SIGINT, &child_act, NULL );
+
 					char *args[512] = {0};
 					int i;
 					for ( i = 0; i < C.argc; ++i ) {
@@ -175,34 +194,105 @@ int main(int argc, char **argv) {
 					}
 					execvp(C.name, args);
 					// If we got here, there was an error with exec
-					// so implement according to spec section "Command Execution" 2nd paragraph
 					perror( C.name );
 					return( 1 );
 					break;
 				default: // parent
-					ten = ten - 1;
-					printf("I am the parent! ten = %d\n", ten);
-					printf( "C.name in the parent: %s\n", C.name );
+					printf("In parent, switch default!\n");
 					if ( ! C.isBackground ) { 
 						// The given command is a foreground process, so wait here 
 						w_pid = waitpid( spawnpid, &status, 0 );
-						// check for failed wait?? see lecture 9, p 20
 					} else { 
 						// The given command must be treated as a background process,
-						// so waitpid should be called right before each iteration
-						// of getCommand()
-						// Also, child pid needs to be added to array,
-						// as explained at bottom of spec p 1
+						// so waitpid is called on each of the b_pid linked list, below, 
+						// at the end of this while loop, right before getCommand() is called again
+						int b_ret = waitpid( spawnpid, NULL, WNOHANG );
+						if ( b_ret == -1 ) {
+							printf( "Could not wait for child in switch defalut!\n" );
+							exit( 1 );
+						}
+						printf( "background pid is %d\n", spawnpid );
+
+						// insert new background process ID at head of b_pids linked list
+						B_pid *new_b_pid = malloc( sizeof( B_pid ) );
+						new_b_pid->pid = spawnpid;
+						new_b_pid->next = b_pids_head;
+						b_pids_head = new_b_pid;
 					}
+
+					// check here for interrupt sent to parent (note: duplicated from somewhere above)
+					if ( status >= 0 ) { // status has been set by the last FOREGROUND process
+						// TODO or use this example from lecture 9, p 20
+						if ( WIFSIGNALED( status ) ) {
+							// if there was a signal caught (should be caught elsewhere), print out the signal instead
+							printf("terminated by signal %d\n", status);
+						}
+					}	
+
 					break;
 			}
-			//printf("This should only be executed in the parent!\n");
 
+		}
+
+		// print out status(es) of background processes here if exited
+		B_pid *curr_b_pid = b_pids_head;
+		B_pid *prev_b_pid = b_pids_head;
+		int inf_loop_safeguard = 10;
+		while ( curr_b_pid != 0 && inf_loop_safeguard > 0 ) {
+			int b_status = -5;
+			int b_w = waitpid( curr_b_pid->pid, &b_status, WNOHANG );
+			if ( b_w == -1 ) { perror("waitpid"); exit( 1 ); }
+			int isDone = 0;
+			if ( b_w == 0 ) {
+				printf( "process %d still going\n", curr_b_pid->pid );
+			} else if ( WIFEXITED( b_status ) ) {
+				int b_ret_status = WEXITSTATUS( b_status );
+				printf( "background pid %d is done: exit value %d\n", curr_b_pid->pid, b_ret_status );
+				isDone = 1;
+			} else if ( WIFSIGNALED( b_status ) ) {
+				// if there was a signal caught
+				printf( "background pid %d is done: terminated by signal %d\n", curr_b_pid->pid, b_status );
+				isDone = 1;
+			}
+			if ( isDone ) {	
+				// remove this background pid from the linked list
+				if ( b_pids_head->next != 0 ) {
+					free( b_pids_head );
+					b_pids_head = 0;
+					curr_b_pid = 0;
+					prev_b_pid = 0;
+				} else if ( prev_b_pid == curr_b_pid ) {
+					b_pids_head = curr_b_pid->next;
+					prev_b_pid = curr_b_pid->next;
+					free( curr_b_pid );
+					curr_b_pid = b_pids_head;
+				} else {
+					prev_b_pid->next = curr_b_pid->next;
+					free( curr_b_pid );
+					curr_b_pid = prev_b_pid->next;
+				}
+
+				// debug
+				printf( "debug curr_b_pid: %d\n", curr_b_pid );
+				printf( "debug prev_b_pid: %d\n", prev_b_pid );
+				printf( "debug b_pids_head: %d\n", b_pids_head );
+			} else { // move the pid pointers
+				prev_b_pid = curr_b_pid;
+				curr_b_pid = curr_b_pid->next;
+			}
+			// debug
+			printf( "waiting: inf_loop_safeguard: %d\n", inf_loop_safeguard );
+		inf_loop_safeguard--;
 		}
 	}
 
 
 	free( C.args );
+	while (b_pids_head != 0) {
+		B_pid *temp = b_pids_head->next;
+		free( b_pids_head );
+		b_pids_head = temp;
+	}
 
 
 	exit( 0 );
