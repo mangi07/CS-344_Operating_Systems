@@ -118,9 +118,14 @@ int main(int argc, char **argv) {
 
 		if ( C.name != NULL && strcmp( C.name, "exit" ) == 0 ) {
 			shouldRepeat = 0;
-			// Note: You must kill all processes and jobs started by this shell here!!
+			// Kill all processes and jobs started by this shell here!!
 			// TODO go through linked list and kill all running processes with kill()
-			
+			while (b_pids_head != 0) {
+				kill( b_pids_head->pid, SIGTERM );
+				B_pid *temp = b_pids_head->next;
+				free( b_pids_head );
+				b_pids_head = temp;
+			}
 		} else if ( C.name != NULL && strcmp( C.name, "cd" ) == 0 ) { 
 			// cd implemented here
 			char *home = getenv( "HOME" );
@@ -256,20 +261,26 @@ int main(int argc, char **argv) {
 			}
 			if ( isDone ) {	
 				// remove this background pid from the linked list
-				if ( b_pids_head->next != 0 ) {
+				if ( b_pids_head->next == 0 ) { // only one background process
 					free( b_pids_head );
 					b_pids_head = 0;
 					curr_b_pid = 0;
 					prev_b_pid = 0;
-				} else if ( prev_b_pid == curr_b_pid ) {
+					// debug
+					printf( "removed head\n" );
+				} else if ( prev_b_pid == curr_b_pid ) { // two background processes, where curr is head
 					b_pids_head = curr_b_pid->next;
 					prev_b_pid = curr_b_pid->next;
 					free( curr_b_pid );
 					curr_b_pid = b_pids_head;
-				} else {
+					// debug
+					printf( "removed head, but one more background process remains\n" );
+				} else { // at least two background processes, where curr is ahead of prev by one
 					prev_b_pid->next = curr_b_pid->next;
 					free( curr_b_pid );
 					curr_b_pid = prev_b_pid->next;
+					// debug
+					printf( "removed curr, where at least two backgroud processes exits\n" );
 				}
 
 				// debug
@@ -282,7 +293,7 @@ int main(int argc, char **argv) {
 			}
 			// debug
 			printf( "waiting: inf_loop_safeguard: %d\n", inf_loop_safeguard );
-		inf_loop_safeguard--;
+			inf_loop_safeguard--;
 		}
 	}
 
