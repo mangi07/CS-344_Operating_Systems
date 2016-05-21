@@ -142,6 +142,7 @@ void getCommand( Command *C ) {
 	}
 	*/
 	// debug
+	/*
 	int debug_count;
 	printf( "C->name: %s\n", C->name );
 	for ( debug_count = 0; debug_count < C->argc; debug_count++ ) {
@@ -151,6 +152,7 @@ void getCommand( Command *C ) {
 	printf( "C->file: %s\n", C->file );
 	printf( "C->redir: %d\n", C->redir );
 	printf( "C->isBackground: %d\n", C->isBackground );
+	*/
 }
 
 
@@ -172,7 +174,66 @@ int main(int argc, char **argv) {
 
 	int shouldRepeat = 1;
 	while ( shouldRepeat ) {
-		// TODO check any background processes here: refer to lecture 9, p 21, 4th bullet point
+		// print out status(es) of background processes here if exited
+		B_pid *curr_b_pid = b_pids_head;
+		B_pid *prev_b_pid = b_pids_head;
+		//int inf_loop_safeguard = 10;
+		while ( curr_b_pid != 0 /*&& inf_loop_safeguard > 0*/ ) {
+			int b_status = -5;
+			int b_w = waitpid( curr_b_pid->pid, &b_status, WNOHANG );
+			// debug
+			//printf( "checking background processes at top, pid: %d, b_status: %d\n", curr_b_pid->pid, b_status );
+			if ( b_w == -1 ) { perror("waitpid"); exit( 1 ); }
+			int isDone = 0;
+			if ( b_w == 0 ) {
+				// debug
+				//printf( "process %d still going\n", curr_b_pid->pid );
+			} else if ( WIFEXITED( b_status ) ) {
+				int b_ret_status = WEXITSTATUS( b_status );
+				printf( "background pid %d is done: exit value %d\n", curr_b_pid->pid, b_ret_status );
+				isDone = 1;
+			} else if ( WIFSIGNALED( b_status ) ) {
+				// if there was a signal caught
+				printf( "background pid %d is done: terminated by signal %d\n", curr_b_pid->pid, b_status );
+				isDone = 1;
+			}
+			if ( isDone ) {	
+				// remove this background pid from the linked list
+				if ( b_pids_head->next == 0 ) { // only one background process
+					free( b_pids_head );
+					b_pids_head = 0;
+					curr_b_pid = 0;
+					prev_b_pid = 0;
+					// debug
+					//printf( "removed head\n" );
+				} else if ( prev_b_pid == curr_b_pid ) { // two background processes, where curr is head
+					b_pids_head = curr_b_pid->next;
+					prev_b_pid = curr_b_pid->next;
+					free( curr_b_pid );
+					curr_b_pid = b_pids_head;
+					// debug
+					//printf( "removed head, but one more background process remains\n" );
+				} else { // at least two background processes, where curr is ahead of prev by one
+					prev_b_pid->next = curr_b_pid->next;
+					free( curr_b_pid );
+					curr_b_pid = prev_b_pid->next;
+					// debug
+					//printf( "removed curr, where at least two backgroud processes exits\n" );
+				}
+
+				// debug
+				//printf( "debug curr_b_pid: %d\n", curr_b_pid );
+				//printf( "debug prev_b_pid: %d\n", prev_b_pid );
+				//printf( "debug b_pids_head: %d\n", b_pids_head );
+			} else { // move the pid pointers
+				prev_b_pid = curr_b_pid;
+				curr_b_pid = curr_b_pid->next;
+			}
+			// debug
+			//printf( "waiting: inf_loop_safeguard: %d\n", inf_loop_safeguard );
+			//inf_loop_safeguard--;
+		}
+
 		getCommand( C_ptr );
 
 		// exit implemented here
@@ -235,7 +296,8 @@ int main(int argc, char **argv) {
 			pid_t spawnpid = -5;
 			pid_t w_pid = -5;
 
-			printf( "In the parent right before the fork\n" );
+			// debug
+			//printf( "In the parent right before the fork\n" );
 
 			spawnpid = fork();
 
@@ -247,7 +309,8 @@ int main(int argc, char **argv) {
 					break;
 				case 0: // child, where command is executed, whether foreground or background
 					// must be a command other than cd, status, or exit
-					printf( "I am the child!\n" );
+					// debug
+					//printf( "I am the child!\n" );
 
 					/* signals */
 					if ( ! C.isBackground ) sigaction( SIGINT, &child_act, NULL );
@@ -259,9 +322,30 @@ int main(int argc, char **argv) {
 					}
 					// TODO In the case of background processes, 
 					// redirect output to dev/null/ if it's not being directed to a file
-					// probably extract to function for sake of flow control
+					if ( C.isBackground ) {
+						int devNull_fd = open( "/dev/null", O_RDWR );
+						if ( devNull_fd == -1 ) {
+							// file error, so don't run the rest of command C
+							perror( "open" );
+							exit( 1 );
+						}
+						int devNull_fd2 = dup2( devNull_fd, 1 );
+						if ( devNull_fd2 == -1 ) {
+							// file error, so don't run the rest of command C
+							perror( "dup2" );
+							exit( 1 );
+						}
+						int devNull_fd3 = dup2( devNull_fd, 0 );
+						if ( devNull_fd3 == -1 ) {
+							// file error, so don't run the rest of command C
+							perror( "dup2" );
+							exit( 1 );
+						}
+						//close( devNull_fd );
+						//close( devNull_fd2 );
+					}
 					// if condition met, redirect stdout to file given in command
-					if ( C.redir == OUT_FILE && C.file != NULL ) {
+					else if ( C.redir == OUT_FILE && C.file != NULL ) {
 						// check that the arguments meet the specs
 						// TODO also, consider closing this file at the end of the outer while loop
 						int fd = open( C.file, O_WRONLY|O_CREAT|O_TRUNC, 0644 );
@@ -276,6 +360,8 @@ int main(int argc, char **argv) {
 							perror( "dup2" );
 							exit( 1 );
 						}
+						//close( fd );
+						//close( fd2 );
 					}
 					// if condition met, redirect stdin to file given in command, 
 					// to read in from file that which is input to execvp command
@@ -294,6 +380,8 @@ int main(int argc, char **argv) {
 							perror( "dup2" );
 							exit( 1 );
 						}
+						//close( fd );
+						//close( fd2 );
 					}
 					execvp(C.name, args);
 					// If we got here, there was an error with exec
@@ -301,14 +389,25 @@ int main(int argc, char **argv) {
 					return( 1 );
 					break;
 				default: // parent
-					printf("In parent, switch default!\n");
+					// debug
+					//printf("In parent, switch default!\n");
+					// close-on-exec needed? ie: fctnl(fd, F_SETFD, FD_CLOEXEC) ?
 					if ( ! C.isBackground ) { 
 						// The given command is a foreground process, so wait here 
 						w_pid = waitpid( spawnpid, &status, 0 );
+						// check here for interrupt sent to parent (note: duplicated from somewhere above)
+						if ( status >= 0 ) { // status has been set by the last FOREGROUND process
+							// TODO or use this example from lecture 9, p 20
+							if ( WIFSIGNALED( status ) ) {
+								// if there was a signal caught (should be caught elsewhere), 
+								// print out the signal instead
+								printf("terminated by signal %d\n", status);
+							}
+						}
 					} else { 
 						// The given command must be treated as a background process,
-						// so waitpid is called on each of the b_pid linked list, below, 
-						// at the end of this while loop, right before getCommand() is called again
+						// so waitpid is called on each of the b_pid linked list, 
+						// at the beginning of this while loop, right before getCommand() is called again
 						int b_ret = waitpid( spawnpid, NULL, WNOHANG );
 						if ( b_ret == -1 ) {
 							printf( "Could not wait for child in switch defalut!\n" );
@@ -323,76 +422,14 @@ int main(int argc, char **argv) {
 						b_pids_head = new_b_pid;
 					}
 
-					// check here for interrupt sent to parent (note: duplicated from somewhere above)
-					if ( status >= 0 ) { // status has been set by the last FOREGROUND process
-						// TODO or use this example from lecture 9, p 20
-						if ( WIFSIGNALED( status ) ) {
-							// if there was a signal caught (should be caught elsewhere), print out the signal instead
-							printf("terminated by signal %d\n", status);
-						}
-					}	
+
 
 					break;
 			}
 
 		}
 
-		// print out status(es) of background processes here if exited
-		B_pid *curr_b_pid = b_pids_head;
-		B_pid *prev_b_pid = b_pids_head;
-		int inf_loop_safeguard = 10;
-		while ( curr_b_pid != 0 && inf_loop_safeguard > 0 ) {
-			int b_status = -5;
-			int b_w = waitpid( curr_b_pid->pid, &b_status, WNOHANG );
-			if ( b_w == -1 ) { perror("waitpid"); exit( 1 ); }
-			int isDone = 0;
-			if ( b_w == 0 ) {
-				printf( "process %d still going\n", curr_b_pid->pid );
-			} else if ( WIFEXITED( b_status ) ) {
-				int b_ret_status = WEXITSTATUS( b_status );
-				printf( "background pid %d is done: exit value %d\n", curr_b_pid->pid, b_ret_status );
-				isDone = 1;
-			} else if ( WIFSIGNALED( b_status ) ) {
-				// if there was a signal caught
-				printf( "background pid %d is done: terminated by signal %d\n", curr_b_pid->pid, b_status );
-				isDone = 1;
-			}
-			if ( isDone ) {	
-				// remove this background pid from the linked list
-				if ( b_pids_head->next == 0 ) { // only one background process
-					free( b_pids_head );
-					b_pids_head = 0;
-					curr_b_pid = 0;
-					prev_b_pid = 0;
-					// debug
-					printf( "removed head\n" );
-				} else if ( prev_b_pid == curr_b_pid ) { // two background processes, where curr is head
-					b_pids_head = curr_b_pid->next;
-					prev_b_pid = curr_b_pid->next;
-					free( curr_b_pid );
-					curr_b_pid = b_pids_head;
-					// debug
-					printf( "removed head, but one more background process remains\n" );
-				} else { // at least two background processes, where curr is ahead of prev by one
-					prev_b_pid->next = curr_b_pid->next;
-					free( curr_b_pid );
-					curr_b_pid = prev_b_pid->next;
-					// debug
-					printf( "removed curr, where at least two backgroud processes exits\n" );
-				}
 
-				// debug
-				printf( "debug curr_b_pid: %d\n", curr_b_pid );
-				printf( "debug prev_b_pid: %d\n", prev_b_pid );
-				printf( "debug b_pids_head: %d\n", b_pids_head );
-			} else { // move the pid pointers
-				prev_b_pid = curr_b_pid;
-				curr_b_pid = curr_b_pid->next;
-			}
-			// debug
-			printf( "waiting: inf_loop_safeguard: %d\n", inf_loop_safeguard );
-			inf_loop_safeguard--;
-		}
 	}
 
 
