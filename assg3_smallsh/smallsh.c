@@ -11,6 +11,8 @@
 #include <unistd.h>
 #include <linux/limits.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 struct command {
 	char* name;
@@ -43,6 +45,7 @@ void getCommand( Command *C ) {
 	memset( &(*C), 0, sizeof( (*C) ) );
 	C->args = malloc( MAXARGS * sizeof( char ) );
 	C->argc = 0;
+	C->redir = 0;
 
 	// Get command input into a buffer
 	memset( &buffer, 0, sizeof(char) * 2048 );
@@ -57,6 +60,7 @@ void getCommand( Command *C ) {
 		buffer[ len - 1 ] = '\0';
 	}
 	
+	// get command name if user is not commenting
 	char *next_word = strtok( buffer, " " );
 	char *command = NULL;
 	if ( next_word == NULL || next_word[0] == '#' ) {
@@ -67,30 +71,86 @@ void getCommand( Command *C ) {
 		C->args[0] = next_word;
 	}
 	int args_count = 1;
-	while ( next_word != NULL && args_count < MAXARGS &&
-			next_word[0] != '<' &&
-			next_word[0] != '>' ) {
+	
+	// check for regular args to the command
+	next_word = strtok( NULL, " " );
+	while ( next_word != NULL && strcmp( next_word, "<" ) != 0 
+				  && strcmp( next_word, ">" ) != 0 
+				  && strcmp( next_word, "&" ) != 0 ) {
+		C->args[ args_count ] = next_word; // okay if NULL is assigned	
+		args_count++;
+		next_word = strtok( NULL, " " );
+	}
+	// last arg of command must be NULL for execvp which will be called later
+	C->args[ args_count + 1 ] = NULL;
+	C->argc = args_count + 1;
+
+	// check for redirection and get file name
+	if ( next_word != NULL && strcmp( next_word, ">" ) == 0 ) {
+		 C->redir = OUT_FILE;
+		next_word = strtok( NULL, " " );
+		if (next_word != NULL ) { 
+			C->file = next_word;
+			next_word = strtok( NULL, " " );
+		} else {
+			printf( "command syntax error: expected file name!\n" );
+			exit( 1 );
+		}
+	} else if ( next_word != NULL && strcmp( next_word, "<" ) == 0 ) {
+		C->redir = IN_FILE;
 		next_word = strtok( NULL, " " );
 		if ( next_word != NULL ) {
+			C->file = next_word;
+			next_word = strtok( NULL, " " );
+		} else {
+			printf( "command syntax error: expected file name!\n" );
+			exit( 1 );
+		}
+	}
+
+	// check for & and assign isBackground if present
+	if ( next_word != NULL && strcmp( next_word, "&" ) == 0 ) C->isBackground = 1;
+	next_word = strtok( NULL, " " );
+
+	// maybe delete the rest of this function...
+	/*
+	while ( next_word != NULL && args_count < MAXARGS ) {
+		next_word = strtok( NULL, " " );
+		if ( next_word == NULL ) break;
+		if ( next_word == ">" ) {
+			C->redir = OUT_FILE;
+			isArg = 0;
+		} else if ( next_word == "<" ) {
+			C->redir = IN_FILE;
+			isArg = 0;
+		}
+		if ( isArg ) {
 			C->args[ args_count ] = next_word;
 			args_count++;
+		} else { // it must be a file
+			C->file = next_word;
 		}
 	}
 	C->argc = args_count;
 	C->args[ args_count ] == NULL;
 
-	if ( next_word != NULL && next_word == "<" ) {
-		C->redir = IN_FILE;
-	} else if ( next_word != NULL && next_word == ">" ) {
-		C->redir = OUT_FILE;
-	}
-	
 	// check whether this command is to be a background process
 	if ( args_count > 1 && strcmp( C->args[ args_count-1 ], "&" ) == 0 ) {
 		C->isBackground = 1;
 		C->args[ args_count-1 ] = NULL;
 		C->argc--;
 	}
+	*/
+	// debug
+	int debug_count;
+	printf( "C->name: %s\n", C->name );
+	for ( debug_count = 0; debug_count < C->argc; debug_count++ ) {
+		printf( "C->args[%d]: %s\n", debug_count, C->args[debug_count] );
+	}
+	printf( "C->argc: %d\n", C->argc );
+	printf( "C->file: %s\n", C->file );
+	printf( "C->redir: %d\n", C->redir );
+	printf( "C->isBackground: %d\n", C->isBackground );
 }
 
 
@@ -114,12 +174,12 @@ int main(int argc, char **argv) {
 	while ( shouldRepeat ) {
 		// TODO check any background processes here: refer to lecture 9, p 21, 4th bullet point
 		getCommand( C_ptr );
-		// exit implemented here
 
+		// exit implemented here
 		if ( C.name != NULL && strcmp( C.name, "exit" ) == 0 ) {
 			shouldRepeat = 0;
 			// Kill all processes and jobs started by this shell here!!
-			// TODO go through linked list and kill all running processes with kill()
+			// Go through linked list and kill all running background processes with kill()
 			while (b_pids_head != 0) {
 				kill( b_pids_head->pid, SIGTERM );
 				B_pid *temp = b_pids_head->next;
@@ -196,6 +256,27 @@ int main(int argc, char **argv) {
 					int i;
 					for ( i = 0; i < C.argc; ++i ) {
 						args[i] = C.args[i];
+					}
+					// TODO need to handle io redirection with dup2() somewhere in here
+					// as well as, in the case of background processes, 
+					// redirecting output to dev/null/ if it's not being directed to a file
+					// probably extract to function for sake of flow control
+					// if condition met, redirect stdout to file given in command
+					if ( C.redir == OUT_FILE && C.file != NULL ) {
+						// check that the arguments meet the specs
+						// also, consider closing this file at the end of the outer while loop
+						int fd = open( C.file, O_WRONLY|O_CREAT|O_TRUNC, 0644 );
+						if ( fd == -1 ) {
+							// file error, so don't run the rest of command C
+							perror( "open" );
+							exit( 1 );
+						}
+						int fd2 = dup2( fd, 1 );
+						if ( fd2 == -1 ) {
+							// file error, so don't run the rest of command C
+							perror( "dup2" );
+							exit( 1 );
+						}
 					}
 					execvp(C.name, args);
 					// If we got here, there was an error with exec
