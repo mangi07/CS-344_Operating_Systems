@@ -257,14 +257,13 @@ int main(int argc, char **argv) {
 					for ( i = 0; i < C.argc; ++i ) {
 						args[i] = C.args[i];
 					}
-					// TODO need to handle io redirection with dup2() somewhere in here
-					// as well as, in the case of background processes, 
-					// redirecting output to dev/null/ if it's not being directed to a file
+					// TODO In the case of background processes, 
+					// redirect output to dev/null/ if it's not being directed to a file
 					// probably extract to function for sake of flow control
 					// if condition met, redirect stdout to file given in command
 					if ( C.redir == OUT_FILE && C.file != NULL ) {
 						// check that the arguments meet the specs
-						// also, consider closing this file at the end of the outer while loop
+						// TODO also, consider closing this file at the end of the outer while loop
 						int fd = open( C.file, O_WRONLY|O_CREAT|O_TRUNC, 0644 );
 						if ( fd == -1 ) {
 							// file error, so don't run the rest of command C
@@ -272,6 +271,24 @@ int main(int argc, char **argv) {
 							exit( 1 );
 						}
 						int fd2 = dup2( fd, 1 );
+						if ( fd2 == -1 ) {
+							// file error, so don't run the rest of command C
+							perror( "dup2" );
+							exit( 1 );
+						}
+					}
+					// if condition met, redirect stdin to file given in command, 
+					// to read in from file that which is input to execvp command
+					else if ( C.redir == IN_FILE && C.file != NULL ) {
+						// check that the arguments meet the specs
+						// also, consider closing this file at the end of the outer while loop
+						int fd = open( C.file, O_RDONLY );
+						if ( fd == -1 ) {
+							// file error, so don't run the rest of command C
+							perror( "open" );
+							exit( 1 );
+						}
+						int fd2 = dup2( fd, 0 );
 						if ( fd2 == -1 ) {
 							// file error, so don't run the rest of command C
 							perror( "dup2" );
