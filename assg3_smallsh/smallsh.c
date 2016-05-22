@@ -40,7 +40,7 @@ static const int MAXLEN = 2048;
 char buffer[2048] = {0};
 void getCommand( Command *C ) {
 
-	fflush( NULL );
+	//fflush( NULL );
 	printf( ": " );
 
 	// Initialize command struct
@@ -297,13 +297,13 @@ int main(int argc, char **argv) {
 						int fd = open( C.file, O_RDONLY );
 						if ( fd == -1 ) {
 							// file error, so don't run the rest of command C
-							perror( "open" );
+							if ( ! C.isBackground ) perror( "open" );
 							exit( 1 );
 						}
 						int fd2 = dup2( fd, 0 );
 						if ( fd2 == -1 ) {
 							// file error, so don't run the rest of command C
-							perror( "dup2" );
+							if ( ! C.isBackground ) perror( "dup2" );
 							exit( 1 );
 						}
 						//close( fd );
