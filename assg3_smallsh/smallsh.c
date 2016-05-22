@@ -40,6 +40,7 @@ static const int MAXLEN = 2048;
 char buffer[2048] = {0};
 void getCommand( Command *C ) {
 
+	fflush( NULL );
 	printf( ": " );
 
 	// Initialize command struct
@@ -128,6 +129,7 @@ int main(int argc, char **argv) {
 	sigaction( SIGINT, &parent_act, NULL );
 
 	Command C;
+	C.name = NULL;
 	Command *C_ptr = &C;
 	int status = -5;
 	int exit_status = -5;
@@ -138,6 +140,8 @@ int main(int argc, char **argv) {
 		B_pid *curr_b_pid = b_pids_head;
 		B_pid *prev_b_pid = b_pids_head;
 		//int inf_loop_safeguard = 10;
+		// Give some time to finish processing any kill signals sent to background processes.
+		if ( C.name != NULL && strcmp( C.name, "kill" ) == 0 ) sleep( 1 );
 		while ( curr_b_pid != 0 /*&& inf_loop_safeguard > 0*/ ) {
 			int b_status = -5;
 			int b_w = waitpid( curr_b_pid->pid, &b_status, WNOHANG );
@@ -251,23 +255,20 @@ int main(int argc, char **argv) {
 					}
 					// In the case of background processes, 
 					// redirect output to dev/null/ if it's not being directed to a file
-					if ( C.isBackground ) {
+					if ( C.isBackground && C.redir == 0 && C.file == NULL ) {
 						int devNull_fd = open( "/dev/null", O_RDWR );
 						if ( devNull_fd == -1 ) {
 							// file error, so don't run the rest of command C
-							perror( "open" );
 							exit( 1 );
 						}
 						int devNull_fd2 = dup2( devNull_fd, 1 );
 						if ( devNull_fd2 == -1 ) {
 							// file error, so don't run the rest of command C
-							perror( "dup2" );
 							exit( 1 );
 						}
 						int devNull_fd3 = dup2( devNull_fd, 0 );
 						if ( devNull_fd3 == -1 ) {
 							// file error, so don't run the rest of command C
-							perror( "dup2" );
 							exit( 1 );
 						}
 						//close( devNull_fd );
@@ -278,13 +279,13 @@ int main(int argc, char **argv) {
 						int fd = open( C.file, O_WRONLY|O_CREAT|O_TRUNC, 0644 );
 						if ( fd == -1 ) {
 							// file error, so don't run the rest of command C
-							perror( "open" );
+							if ( ! C.isBackground ) perror( "open" );
 							exit( 1 );
 						}
 						int fd2 = dup2( fd, 1 );
 						if ( fd2 == -1 ) {
 							// file error, so don't run the rest of command C
-							perror( "dup2" );
+							if ( ! C.isBackground ) perror( "dup2" );
 							exit( 1 );
 						}
 						//close( fd );
