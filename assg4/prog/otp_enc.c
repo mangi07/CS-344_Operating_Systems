@@ -18,7 +18,7 @@ void init(int argc, char *argv[]);
 void check_argc(int argc);
 void check_bad_chars(char *file_name);
 void check_bad_key(char *plaintext, char *key);
-
+void send_max(int sockfd);
 
 
 int main(int argc, char *argv[])
@@ -41,7 +41,7 @@ void error(const char *msg)
 }
 
 void init(int argc, char *argv[]) {
-    int sockfd, portno, n;
+    int sockfd, portno;
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
@@ -61,23 +61,11 @@ void init(int argc, char *argv[]) {
          (char *)&serv_addr.sin_addr.s_addr,
          server->h_length);
     serv_addr.sin_port = htons(portno); 
-	printf( "serv_addr.sin_port: %d\n", serv_addr.sin_port ); // debug
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) {
         fprintf(stderr, "Error: could not contact otp_enc_d on port %d\n", serv_addr.sin_port);
 		exit( 2 );
 	}
-	// change some of the following
-    printf("Please enter the message: ");
-    bzero(buffer,256);
-    fgets(buffer,255,stdin);
-    n = write(sockfd,buffer,strlen(buffer));
-    if (n < 0) 
-         error("ERROR writing to socket");
-    bzero(buffer,256);
-    n = read(sockfd,buffer,255);
-    if (n < 0) 
-         error("ERROR reading from socket");
-    printf("%s\n",buffer);
+	send_max(sockfd);
     close(sockfd);
 }
 
@@ -103,7 +91,7 @@ void check_bad_chars(char *file_name) {
 	fclose( file );
 }
 
-int getCharCount( char *file_name ) {
+int get_char_count( char *file_name ) {
 	FILE *file = fopen( file_name, "r" );
 	int fd = fileno( file );
 	struct stat file_stat;
@@ -115,16 +103,30 @@ int getCharCount( char *file_name ) {
 }
 
 void check_bad_key(char *plaintext, char *key) {
-	int plaintext_size = getCharCount( plaintext );
-	int key_size = getCharCount( key );
+	int plaintext_size = get_char_count( plaintext );
+	int key_size = get_char_count( key );
 	if ( key_size < plaintext_size ) {
 		fprintf( stderr, "Error: key '%s' is too short\n", key );
 		exit( 1 );
 	}
 }
 
-
-
+/* Receives an open sockfd and should leave it open for the calling method to close upon return. */
+void send_max(int sockfd) {
+	char buffer[256];
+	int n;
+	printf("Please enter the message: ");
+    bzero(buffer,256);
+    fgets(buffer,255,stdin);
+    n = write(sockfd,buffer,strlen(buffer));
+    if (n < 0) 
+         error("ERROR writing to socket");
+    bzero(buffer,256);
+    n = read(sockfd,buffer,255);
+    if (n < 0) 
+         error("ERROR reading from socket");
+    printf("%s\n",buffer);
+}
 
 
 
