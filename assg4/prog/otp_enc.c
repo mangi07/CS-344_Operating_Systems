@@ -18,7 +18,7 @@ void init(int argc, char *argv[]);
 void check_argc(int argc);
 void check_bad_chars(char *file_name);
 void check_bad_key(char *plaintext, char *key);
-void send_max(int sockfd);
+void send_max(int sockfd, char *argv[]);
 
 
 int main(int argc, char *argv[])
@@ -65,7 +65,7 @@ void init(int argc, char *argv[]) {
         fprintf(stderr, "Error: could not contact otp_enc_d on port %d\n", serv_addr.sin_port);
 		exit( 2 );
 	}
-	send_max(sockfd);
+	send_max(sockfd, argv);
     close(sockfd);
 }
 
@@ -112,17 +112,18 @@ void check_bad_key(char *plaintext, char *key) {
 }
 
 /* Receives an open sockfd and should leave it open for the calling method to close upon return. */
-void send_max(int sockfd) {
-	char buffer[256];
+// In the server, it should suffice to have a char array of 100,000 to receive the message.
+void send_max(int sockfd, char *argv[]) {
+	char buffer[100000];
 	int n;
-	printf("Please enter the message: ");
-    bzero(buffer,256);
-    fgets(buffer,255,stdin);
-    n = write(sockfd,buffer,strlen(buffer));
+    bzero( buffer, 100000 );
+	FILE *send_file = fopen( argv[1], "r" );
+    fgets( buffer, 99999, send_file );
+    n = write( sockfd, buffer, strlen(buffer) );
     if (n < 0) 
          error("ERROR writing to socket");
-    bzero(buffer,256);
-    n = read(sockfd,buffer,255);
+    bzero(buffer, 100000);
+    n = read(sockfd,buffer,99999);
     if (n < 0) 
          error("ERROR reading from socket");
     printf("%s\n",buffer);
