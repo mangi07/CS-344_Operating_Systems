@@ -14,7 +14,7 @@
 
 
 void error(const char *msg);
-void init(int argc, char *argv[]);
+int init(int portno);
 void check_argc(int argc);
 void check_bad_chars(char *file_name);
 void check_bad_key(char *plaintext, char *key);
@@ -27,7 +27,10 @@ int main(int argc, char *argv[])
 	check_argc(argc);
 	check_bad_chars( argv[1] );
 	check_bad_key( argv[1], argv[2] );
-	init(argc, argv);
+	int portno = atoi(argv[3]);
+	int sockfd = init(portno);
+	send_max(sockfd, argv);
+	close(sockfd);
     return 0;
 }
 
@@ -40,13 +43,12 @@ void error(const char *msg)
     exit(0);
 }
 
-void init(int argc, char *argv[]) {
-    int sockfd, portno;
+int init(int portno) {
+    int sockfd;
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
     char buffer[256];
-    portno = atoi(argv[3]);
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) 
         error("ERROR opening socket");
@@ -65,8 +67,7 @@ void init(int argc, char *argv[]) {
         fprintf(stderr, "Error: could not contact otp_enc_d on port %d\n", serv_addr.sin_port);
 		exit( 2 );
 	}
-	send_max(sockfd, argv);
-    close(sockfd);
+    return sockfd;
 }
 
 
@@ -114,6 +115,9 @@ void check_bad_key(char *plaintext, char *key) {
 /* Receives an open sockfd and should leave it open for the calling method to close upon return. */
 // In the server, it should suffice to have a char array of 100,000 to receive the message.
 void send_max(int sockfd, char *argv[]) {
+	// receive new port number from server
+
+	// send data to server and receive response from server
 	char buffer[100000];
 	int n;
     bzero( buffer, 100000 );
@@ -126,7 +130,7 @@ void send_max(int sockfd, char *argv[]) {
     n = read(sockfd,buffer,99999);
     if (n < 0) 
          error("ERROR reading from socket");
-    printf("%s\n",buffer);
+    printf("Buffer from server: %s\n",buffer);
 }
 
 
