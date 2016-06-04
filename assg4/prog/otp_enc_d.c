@@ -31,6 +31,8 @@ void send_new_portno( struct client ); // implement
 // then curr client sends its first request on this new port
 // (is curr client idx shared between processes??)
 void communicate( int sockfd );
+void manage_clients( struct client clients[], int *curr_client );
+void show_clients( struct client clients[] );
 
 
 void error(const char *msg)
@@ -214,6 +216,55 @@ void communicate( int sockfd ) {
 	n = write(sockfd,"Server says: I got your message",100);
 	if (n < 0) error("ERROR writing to socket");
 }
+
+
+void manage_clients( struct client clients[], int *curr_client ) {
+	// check pids
+	//   set all fields back to zero on finished processes
+	int i;
+	for ( i = 0; i < 5; ++i ) {
+		int b_status = -5;
+		int b_w;
+		if ( clients[i].pid != 0 ) b_w = waitpid( clients[i].pid, &b_status, WNOHANG );
+		if ( b_w == -1 ) { perror("waitpid"); exit( 1 ); }
+		int isDone = 0;
+		if ( b_w == 0 ) {
+			// do nothing
+		} else if ( WIFEXITED( b_status ) ) {
+			int b_ret_status = WEXITSTATUS( b_status );
+			printf( "\nbackground pid %d is done: exit value %d\n\n", clients[i].pid, b_ret_status );
+			isDone = 1;
+		} else if ( WIFSIGNALED( b_status ) ) {
+			// if there was a signal caught
+			printf( "\nbackground pid %d is done: terminated by signal  %d\n\n", clients[i].pid, b_status );
+			isDone = 1;
+		}
+		if ( isDone ) {
+			clients[i].pid = 0;
+			clients[i].portno = 0;
+			clients[i].fd = 0;
+		}
+	}
+	// select an open client struct to use
+	int j;
+	for ( j = 0; j < 5; ++j ) {
+		if ( clients[j].pid = 0 ) *curr_client = j;
+	}
+}
+
+// for debugging purposes
+void show_clients( struct client clients[] ) {
+	printf( "Executing show_clients\n" );
+	int i;
+	for ( i = 0; i < 5; ++i ) {
+		printf( "\n\nSHOWING CLIENTS: client: %d:\tpid:\t%d\tportno:\t%d\tfd:\t%d\n",
+			i,
+			clients[i].pid,
+			clients[i].portno,
+			clients[i].fd );
+	}
+}
+
 
 
 
