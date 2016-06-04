@@ -31,6 +31,8 @@ void send_new_portno( struct client ); // implement
 // then curr client sends its first request on this new port
 // (is curr client idx shared between processes??)
 void communicate( int sockfd );
+void manage_clients( struct client clients[], int *curr_client );
+void show_clients( struct client clients[] );
 
 
 void error(const char *msg)
@@ -48,9 +50,17 @@ int main(int argc, char *argv[])
 	curr_client_idx = 0;
 	int portno = atoi( argv[1] );
 	int sockfd = init_socket_fd( portno );
+	
 	// loop accept in start_clients
-	start_clients( sockfd, clients, curr_client_idx );
-	close(sockfd);
+	//while ( 1 ) {
+		//printf( "First line of while loop\n" );
+		start_clients( sockfd, clients, curr_client_idx );
+		//manage_clients( clients, &curr_client_idx );
+		//sleep( 1 );
+		//show_clients( clients ); // debug
+	//}
+
+	close(sockfd); // this line and return statement will probably never execute
 
 	return 0; 
 }
@@ -105,6 +115,8 @@ void fork_child( struct client clients[], int curr ) {
 	int b_ret;
 	struct client *c = &clients[curr];
 
+	int temp_fd; // used in case 0
+	// set up new port connection on server
 	assign_new_portno( clients, curr );
 
 	spawnpid = fork();
@@ -123,7 +135,7 @@ void fork_child( struct client clients[], int curr ) {
 			close( c->fd );
 
 			// set up new socket on server with the new port number
-			int temp_fd = init_socket_fd( c->portno );
+			temp_fd = init_socket_fd( c->portno );
 			c->fd = new_client_fd( temp_fd );
 			// new handshake with client on this new connection
 			verify_new_connection( c->fd );
@@ -174,10 +186,12 @@ void send_new_portno( struct client c ) {
 	printf( "On server in send_new_portno: buffer sent: %s\n", buffer );
 	int n = write( c.fd, buffer, 9  );
 	if (n < 0) error("ERROR writing to socket on server line 173");
-	// verify with client that all was read
+	printf( "GOT PAST WRITE IN SEND_NEW_PORTNO ON SERVER\n\n" );
+	sleep( 5 );
+	printf( "AFTER SLEEP 5 IN SEND_NEW_PORTNO ON SERVER\n\n" );
 	bzero( buffer, 10 );
-	n = read( c.fd, buffer, 9 );
-	if ( n < 0 ) error( "Server could not verify client read in send_new_portno.\n" );
+	read( c.fd, buffer, 9 );
+	printf( "GOT PAST READ IN SEND_NEW_PORTNO ON SERVER\n\n" );
 }
 
 void verify_new_connection( int fd ) {
@@ -189,6 +203,8 @@ void verify_new_connection( int fd ) {
 
 	n = write( fd, "Server verify", 100 );
 	if ( n < 0 ) error("Server could not write verification to client.\n");
+	bzero(buffer,100);
+	n = read(fd,buffer,5);
 }
 
 // the first client struct with its portno set to 0 is open for use
@@ -215,5 +231,52 @@ void communicate( int sockfd ) {
 	if (n < 0) error("ERROR writing to socket");
 }
 
+
+void manage_clients( struct client clients[], int *curr_client ) {
+	// check pids
+	//   set all fields back to zero on finished processes
+	int i;
+	for ( i = 0; i < 5; ++i ) {
+		int b_status = -5;
+		int b_w;
+		if ( clients[i].pid != 0 ) b_w = waitpid( clients[i].pid, &b_status, WNOHANG );
+		if ( b_w == -1 ) { perror("waitpid"); exit( 1 ); }
+		int isDone = 0;
+		if ( b_w == 0 ) {
+			// debug
+			//printf( "process %d still going\n", curr_b_pid->pid );
+		} else if ( WIFEXITED( b_status ) ) {
+			int b_ret_status = WEXITSTATUS( b_status );
+			printf( "\nbackground pid %d is done: exit value %d\n\n", clients[i].pid, b_ret_status );
+			isDone = 1;
+		} else if ( WIFSIGNALED( b_status ) ) {
+			// if there was a signal caught
+			printf( "\nbackground pid %d is done: terminated by signal %d\n\n", clients[i].pid, b_status );
+			isDone = 1;
+		}
+		if ( isDone ) {	
+			clients[i].pid = 0;
+			clients[i].portno = 0;
+			clients[i].fd = 0;	
+		}
+	}
+	// select an open client struct to use
+	int j;
+	for ( j = 0; j < 5; ++j ) {
+		if ( clients[j].pid = 0 ) *curr_client = j;
+	}
+}
+
+// for debuggin purposes
+void show_clients( struct client clients[] ) {
+	printf( "Executing show_clients\n" );
+	int i;
+	for ( i = 0; i < 5; ++i )
+		printf( "\n\nSHOWING CLIENTS: client %d:\tpid:\t%d\tportno:\t%d\tfd:\t%d\n", 
+			i,
+			clients[i].pid,
+			clients[i].portno,
+			clients[i].fd );
+}
 
 
