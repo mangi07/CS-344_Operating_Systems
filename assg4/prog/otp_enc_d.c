@@ -112,9 +112,9 @@ void fork_child( struct client clients[], int curr ) {
 	int b_ret;
 	struct client *c = &clients[curr];
 
-	//int temp_fd; // used in case 0
+	int temp_fd; // used in case 0
 	// set up new port connection on server
-	//assign_new_portno( clients, curr );
+	assign_new_portno( clients, curr );
 
 
 	spawnpid = fork();
@@ -127,13 +127,13 @@ void fork_child( struct client clients[], int curr ) {
 		case 0: // child
 			verify_new_connection( c->fd ); // this is actually on the original socket
 			// set up new port connection on server
-			assign_new_portno( clients, curr );
+			//assign_new_portno( clients, curr );
 			// let client know about new port
 			send_new_portno( *c );
 			close( c->fd );
 
 			// set up new socket on server with the new port number
-			int temp_fd = init_socket_fd( c->portno );
+			temp_fd = init_socket_fd( c->portno );
 			c->fd = new_client_fd( temp_fd );
 			// new handshake with client on this new connection
 			verify_new_connection( c->fd );
