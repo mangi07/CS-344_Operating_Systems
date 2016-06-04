@@ -19,7 +19,8 @@ int curr_client_idx;
 
 int init_socket_fd( int portno );
 void start_clients( int sockfd, struct client clients[], int curr_client_idx );
-void fork_child( struct client );
+void fork_child( struct client clients[], int curr );
+void verify_new_connection( int fd );
 int new_client_fd( int sockfd );
 // need method to check clients pids for exit to avoid zombies
 void set_curr_client( int *curr_client_idx );
@@ -51,8 +52,6 @@ int main(int argc, char *argv[])
 	start_clients( sockfd, clients, curr_client_idx );
 	close(sockfd);
 
-	//assign_new_portno( clients, curr_client_idx );
-
 	return 0; 
 }
 
@@ -76,23 +75,35 @@ int init_socket_fd( int portno ) {
 	return sockfd;
 }
 
-// fork happens in this method
 // sockfd is the parent socket fd
-void start_clients( int sockfd, struct client clients[], int curr_client_idx ) {
+void start_clients( int sockfd, struct client clients[], int curr ) {
 	// accept happens here
-	clients[curr_client_idx].fd = new_client_fd( sockfd );
-	// agree on new port, now
-	assign_new_portno( clients, curr_client_idx );
-	send_new_portno( clients[curr_client_idx] );
+	clients[curr].fd = new_client_fd( sockfd );
 	// fork and do the encryption in the child process
-	fork_child( clients[curr_client_idx] );
+	fork_child( clients, curr );
+}
+
+int new_client_fd( int sockfd ) {
+	int newsockfd;
+	socklen_t clilen;
+	struct sockaddr_in cli_addr;
+
+	clilen = sizeof(cli_addr);
+	newsockfd = accept(sockfd, 
+			(struct sockaddr *) &cli_addr, 
+			&clilen);
+	if (newsockfd < 0) 
+		error("ERROR on accept");
+
+	return newsockfd;
 }
 
 // assigns (modifies) pid, fd, and portno of struct passed in
-void fork_child( struct client c ) {
+void fork_child( struct client clients[], int curr ) {
 	// modified from lectures
 	pid_t spawnpid = -5;
 	int b_ret;
+	struct client *c = &clients[curr];
 	spawnpid = fork();
 	switch (spawnpid)
 	{
@@ -101,10 +112,21 @@ void fork_child( struct client c ) {
 			exit(1);
 			break;
 		case 0: // child
-			// do stuff
-			// send_new_portno( c );
-			communicate( c.fd ); // this will happen after a fork
-			close( c.fd );
+			verify_new_connection( c->fd ); // this is actually on the original socket
+			// set up new port connection on server
+			assign_new_portno( clients, curr );
+			// let client know about new port
+			send_new_portno( *c );
+			close( c->fd );
+
+			// set up new socket on server with the new port number
+			int temp_fd = init_socket_fd( c->portno );
+			c->fd = new_client_fd( temp_fd );
+			// new handshake with client on this new connection
+			verify_new_connection( c->fd );
+			printf( "made it all the way through on server!\n" );
+			close( c->fd );
+			exit( 0 );
 		default: // parent
 			// waitpid is called on each of the client pids, in a different method 
 			b_ret = waitpid( spawnpid, NULL, WNOHANG );
@@ -113,20 +135,8 @@ void fork_child( struct client c ) {
 				exit( 1 );
 			}
 			printf( "child pid is %d\n", spawnpid ); // debug
-			c.pid = spawnpid;
+			c->pid = spawnpid;
 			break;
-	}
-}
-
-// the first client struct with its portno set to 0 is open for use
-// and will be chosen
-void set_curr_client( int *curr_client_idx ) {
-	int i;
-	for ( i = 0; i < 5; ++i ) {
-		if ( clients[i].portno == 0 ) {
-			*curr_client_idx = i;
-			return;
-		}
 	}
 }
 
@@ -153,23 +163,42 @@ int rand_range() {
 	return num;
 }
 
-int new_client_fd( int sockfd ) {
-	int newsockfd;
-	socklen_t clilen;
-	struct sockaddr_in cli_addr;
-
-	clilen = sizeof(cli_addr);
-	newsockfd = accept(sockfd, 
-			(struct sockaddr *) &cli_addr, 
-			&clilen);
-	if (newsockfd < 0) 
-		error("ERROR on accept");
-
-	return newsockfd;
+void send_new_portno( struct client c ) {
+	char buffer[10];
+	bzero( buffer, 10 );
+	// convert port number to fill buffer
+	snprintf( buffer, sizeof(buffer), "%d\0", c.portno );	
+	printf( "On server in send_new_portno: buffer sent: %s\n", buffer );
+	int n = write( c.fd, buffer, 9  );
+	if (n < 0) error("ERROR writing to socket on server line 173");
+	// verify with client that all was read
+	bzero( buffer, 10 );
+	n = read( c.fd, buffer, 9 );
+	if ( n < 0 ) error( "Server could not verify client read in send_new_portno.\n" );
 }
 
+void verify_new_connection( int fd ) {
+	char buffer[100];
+	bzero(buffer,100);
+	int n = read(fd,buffer,99);
+	if (n < 0) error("Server could not read verification from client.\n");
+	printf("Server says in verify_new_connection: %s\n",buffer);
 
-/* Child Methods */
+	n = write( fd, "Server verify", 100 );
+	if ( n < 0 ) error("Server could not write verification to client.\n");
+}
+
+// the first client struct with its portno set to 0 is open for use
+// and will be chosen
+void set_curr_client( int *curr_client_idx ) {
+	int i;
+	for ( i = 0; i < 5; ++i ) {
+		if ( clients[i].portno == 0 ) {
+			*curr_client_idx = i;
+			return;
+		}
+	}
+}
 
 void communicate( int sockfd ) {
 	// going to need to fork and start up on new port for this read/write stuff
@@ -182,16 +211,6 @@ void communicate( int sockfd ) {
 	n = write(sockfd,"Server says: I got your message",100);
 	if (n < 0) error("ERROR writing to socket");
 }
-
-// test
-void send_new_portno( struct client c ) {
-	char buffer[10];
-	bzero( buffer, 10 );
-	int sockfd = c.fd;
-	int n = write( sockfd, buffer, 10 );
-	if (n < 0) error("ERROR writing to socket");
-}
-
 
 
 
