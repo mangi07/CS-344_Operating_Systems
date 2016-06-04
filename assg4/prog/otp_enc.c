@@ -148,7 +148,13 @@ int receive_new_portno( int fd ) {
 	int portno;
 	char buffer[100];
     bzero( buffer, 100 );
-    read_all( buffer, 100, fd );
+    read_all( buffer, 99, fd );
+	int i;
+	for ( i = 0; i < 100; ++i ) {
+		if ( (buffer[i] != 0 || buffer[i] != ' ') && buffer[i] < '0' || buffer[i] > '9' )
+			buffer[i] = ' ';
+	}
+	printf( "IN RECEIVE_NEW_PORTNO BUFFER = %s\n\n", buffer );
 	portno = atoi( buffer );
 	printf("New port number from server raw: %s\n", buffer );
     printf("New port number from server converted: %d\n", portno );
@@ -181,7 +187,7 @@ void read_all( char *buffer, int buff_size, int fd ) {
 	int tally = 0;
 	while( (n = read( fd, buffer, buff_size )) > 0 && tally <= buff_size) {
 		tally += n;
-		printf( "in read_all, return value of read: %d and tally = %d\n", n, tally );
+		printf( "in read_all, return value of read: %d and tally = %d and buffer = %s\n", n, tally, buffer );
 	}
 	if (n < 0) { 
 		error("ERROR reading from socket, in read_all");
