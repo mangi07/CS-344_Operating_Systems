@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
 	// need to set up for new, agreed-upon port with server, 
 	// but we're still on the orignal connection at this point.
 	portno = receive_new_portno( sockfd );
+	printf( "\n\ntrace2\n\n" );
 	close( sockfd );
 	printf( "In client, right after closing initial socket.\n" );
 
@@ -146,11 +147,11 @@ void verify_new_connection( int fd ) {
 
 int receive_new_portno( int fd ) {
 	int portno;
-	char buffer[100];
-    bzero( buffer, 100 );
-    read_all( buffer, 100, fd );
+	char buffer[10];
+    bzero( buffer, 10 );
+    read_all( buffer, 10, fd );
 	int i;
-	for ( i = 0; i < 100; i++ ) {
+	for ( i = 0; i < 10; i++ ) {
 		if ( (buffer[i] != ' ' || buffer[i] != '\0') &&  buffer[i] < '0' || buffer[i] > '9' )
 			buffer[i] = ' '; 
 	}
@@ -187,7 +188,9 @@ void read_all( char *buffer, int buff_size, int fd ) {
 	while( (n = read( fd, buffer, buff_size )) > 0 && tally <= buff_size) {
 		tally += n;
 		printf( "in read_all, return value of read: %d and tally = %d\n", n, tally );
+		if ( tally >= buff_size ) break;
 	}
+	printf( "\n\ntrace1\n\n" );
 	if (n < 0) { 
 		error("ERROR reading from socket, in read_all");
 	}

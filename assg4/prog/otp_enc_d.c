@@ -53,8 +53,11 @@ int main(int argc, char *argv[])
 	// loop accept in start_clients
 	while ( 1 ) { // test
 		start_clients( sockfd, clients, curr_client_idx );
+		printf( "\n\nserver trace 1\n\n" );
 		manage_clients( clients, &curr_client_idx );
+		printf( "\n\nserver trace 2\n\n" );
 		show_clients( clients );
+		printf( "\n\nserver trace 3\n\n" );
 	} // newest
 	close(sockfd);
 
@@ -83,18 +86,26 @@ int init_socket_fd( int portno ) {
 
 // sockfd is the parent socket fd
 void start_clients( int sockfd, struct client clients[], int curr ) {
+	printf( "\n\nserver trace start_clients1\n\n" );
 	// accept happens here
 	clients[curr].fd = new_client_fd( sockfd );
+	printf( "\n\nserver trace start_clients2\n\n" );
 	// fork and do the encryption in the child process
 	fork_child( clients, curr );
+	printf( "\n\nserver trace start_clients3\n\n" );
 }
 
+int newsockfd;
+socklen_t clilen;
+struct sockaddr_in cli_addr;
 int new_client_fd( int sockfd ) {
-	int newsockfd;
-	socklen_t clilen;
-	struct sockaddr_in cli_addr;
+	//int newsockfd;
+	//socklen_t clilen;
+	//struct sockaddr_in cli_addr;
 
 	clilen = sizeof(cli_addr);
+	// trace segfault here??
+	printf( "\n\nserver trace new_client_fd pid = %d\n\n", getpid() );
 	newsockfd = accept(sockfd, 
 			(struct sockaddr *) &cli_addr, 
 			&clilen);
@@ -130,6 +141,7 @@ void fork_child( struct client clients[], int curr ) {
 
 			// set up new socket on server with the new port number
 			int temp_fd = init_socket_fd( c->portno );
+			printf( "\n\ntrace case 0: child pid = %d\n\n", getpid() );
 			c->fd = new_client_fd( temp_fd );
 			// new handshake with client on this new connection
 			verify_new_connection( c->fd );
