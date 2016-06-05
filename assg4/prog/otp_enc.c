@@ -24,6 +24,7 @@ void verify_new_connection( int fd );
 int receive_new_portno( int fd );
 void read_all( char *buffer, int buff_size, int fd );
 void write_all( char *buffer, int buff_size, int fd );
+void read_translation( char *buffer, int buff_size, int fd );
 
 int main(int argc, char *argv[])
 {
@@ -185,7 +186,7 @@ void communicate(int sockfd, char *argv[]) {
     if (n < 0) 
          error("ERROR reading from socket");
 */
-	read_all( buffer, 100000, sockfd );
+	read_translation( buffer, 100000, sockfd );
     printf("CLIENT: Buffer from server: %s\n",buffer);
 }
 
@@ -217,3 +218,26 @@ void write_all( char *buffer, int buff_size, int fd ) {
 		error("ERROR writing to socket, in write_all");
 	}
 }
+
+// fills the buffer in chunks
+void read_translation( char *buffer, int buff_size, int fd ) {
+	int n;
+	int tally = 0;
+	char temp_buffer[1000];
+	while( (n = read( fd, temp_buffer, 1000 )) > 0 && tally <= buff_size) {
+		// append current buffer to destination buffer
+		strcat( buffer, temp_buffer );
+		tally += n;
+		printf( "CLIENT: in read_all, return value of read: %d and tally = %d\n", n, tally );
+		//printf( "CLIENT: in read_all, buffer:\n%s\n", buffer );
+		if ( tally >= buff_size ) break;
+	}
+	//printf( "\n\nCLIENT: trace1 read_all buffer: %s\n\n", buffer );
+	if (n < 0) { 
+		error("ERROR reading from socket, in read_all");
+	}
+}
+
+
+
+

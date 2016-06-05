@@ -230,8 +230,6 @@ void communicate( int sockfd ) {
 	// as specified in "Concurrency Implications" of assignment spec file
 	char buffer[100000];
 	bzero(buffer,100000);
-	//int n = read(sockfd,buffer,99999);
-	//if (n < 0) error("ERROR reading from socket");
 	read_all( buffer, 100000, sockfd );
 	printf("SERVER: here is the message: %s\n",buffer);
 	write_all( buffer, 100000, sockfd ); // received text will be translated before this send
@@ -246,11 +244,11 @@ void read_all( char *buffer, int buff_size, int fd ) {
 		// append current buffer to destination buffer
 		strcat( buffer, temp_buffer );
 		tally += n;
-		printf( "SERVER: in read_all, return value of read: %d and tally = %d\n", n, tally );
-		printf( "SERVER: in read_all, buffer:\n%s\n", buffer );
+		//printf( "SERVER: in read_all, return value of read: %d and tally = %d\n", n, tally );
+		//printf( "SERVER: in read_all, buffer:\n%s\n", buffer );
 		if ( tally >= buff_size ) break;
 	}
-	printf( "\n\nSERVER: trace1 read_all buffer: %s\n\n", buffer );
+	//printf( "\n\nSERVER: trace1 read_all buffer: %s\n\n", buffer );
 	if (n < 0) { 
 		error("ERROR reading from socket, in read_all");
 	}
