@@ -34,7 +34,8 @@ void send_new_portno( struct client ); // implement
 void communicate( int sockfd );
 void manage_clients( struct client clients[], int *curr_client );
 void show_clients( struct client clients[] );
-
+void read_all( char *buffer, int buff_size, int fd );
+void write_all( char *buffer, int buff_size, int fd );
 
 void error(const char *msg)
 {
@@ -147,6 +148,7 @@ void fork_child( struct client clients[], int curr ) {
 			c->fd = new_client_fd( temp_fd );
 			// new handshake with client on this new connection
 			verify_new_connection( c->fd );
+			communicate( c->fd );
 			printf( "made it all the way through on server!\n" );
 			close( c->fd );
 			exit( 0 );
@@ -228,13 +230,42 @@ void communicate( int sockfd ) {
 	// as specified in "Concurrency Implications" of assignment spec file
 	char buffer[100000];
 	bzero(buffer,100000);
-	int n = read(sockfd,buffer,99999);
-	if (n < 0) error("ERROR reading from socket");
-	printf("Server says: here is the message: %s\n",buffer);
-	n = write(sockfd,"Server says: I got your message",100);
-	if (n < 0) error("ERROR writing to socket");
+	//int n = read(sockfd,buffer,99999);
+	//if (n < 0) error("ERROR reading from socket");
+	read_all( buffer, 100000, sockfd );
+	printf("SERVER: here is the message: %s\n",buffer);
+	write_all( buffer, 100000, sockfd ); // received text will be translated before this send
 }
 
+// fills the buffer in chunks
+void read_all( char *buffer, int buff_size, int fd ) {
+	int n;
+	int tally = 0;
+	char temp_buffer[1000];
+	while( (n = read( fd, temp_buffer, 1000 )) > 0 && tally <= buff_size) {
+		// append current buffer to destination buffer
+		strcat( buffer, temp_buffer );
+		tally += n;
+		printf( "SERVER: in read_all, return value of read: %d and tally = %d\n", n, tally );
+		printf( "SERVER: in read_all, buffer:\n%s\n", buffer );
+		if ( tally >= buff_size ) break;
+	}
+	printf( "\n\nSERVER: trace1 read_all buffer: %s\n\n", buffer );
+	if (n < 0) { 
+		error("ERROR reading from socket, in read_all");
+	}
+}
+
+void write_all( char *buffer, int buff_size, int fd ) {
+	int n;
+	while( (n = write( fd, buffer, buff_size )) < buff_size ) {
+		printf( "SERVER: in write_all, return value of write: %d\n", n );
+	}
+	printf( "\n\nSERVER: trace1 write_all\n\n" );
+	if (n < 0) { 
+		error("ERROR writing to socket, in write_all");
+	}
+}
 
 void manage_clients( struct client clients[], int *curr_client ) {
 	// check pids
