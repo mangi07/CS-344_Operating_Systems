@@ -51,7 +51,11 @@ int main(int argc, char *argv[])
 	int portno = atoi( argv[1] );
 	int sockfd = init_socket_fd( portno );
 	// loop accept in start_clients
-	start_clients( sockfd, clients, curr_client_idx );
+	while ( 1 ) { // test
+		start_clients( sockfd, clients, curr_client_idx );
+		manage_clients( clients, &curr_client_idx );
+		show_clients( clients );
+	} // newest
 	close(sockfd);
 
 	return 0; 
