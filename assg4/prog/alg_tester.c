@@ -1,4 +1,4 @@
-/* File: enc_tester.c
+/* File: alg_tester.c
  * Author: Ben R. Olson
  * Date: June 5, 2016
  */
@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "enc.h"
+#include "dec.h"
 
 int main(int argc, char *argv[])
 {
@@ -18,6 +19,7 @@ int main(int argc, char *argv[])
 		exit( 1 );
 	}
 	
+	// encryption
 	printf( "Original buffer: %s\n\n", argv[ 1 ] );
 	printf( "Original key: %s\n\n", argv[ 2 ] );
 
@@ -25,6 +27,11 @@ int main(int argc, char *argv[])
 
 	
 	printf( "Encrypted buffer: %s\n\n", argv[ 1 ] );
+
+	// decryption
+	dec( argv[ 1 ], argv[ 2 ] );
+
+	printf( "Decrypted buffer: %s\n\n", argv[ 1 ] );
 
 	return 0;
 }

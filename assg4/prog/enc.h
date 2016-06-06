@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef CONVERT
+#define CONVERT
 // scale buffer and key chars for upcoming integer arithmetic
 int convert( char c ) {
 	if ( c >= 'A' && c <= 'Z' ) c = c - 'A';
@@ -17,6 +19,7 @@ int convert( char c ) {
 	//printf( "In convert, c = %d\n", c );
 	return c;
 }
+#endif
 
 /* Expected: buffer passed in must be no longer than 99999 characters
  * and end with newline character,
@@ -38,12 +41,12 @@ void enc( char* buffer, char* key ) {
 		// next character at buffer[i] is encrypted here
 		b = b + k;
 		if ( b > 26 )
-			b = b - 26;
+			b = b - 27;
 		// replace original character at i with encryption,
 		// modifying the original buffer
 		// Note: anything that is encrypted as space ' ' is b = 26
 		//   so in those cases, buffer[i] will be assigned the space character
-		if ( buffer[ i ] == 26 ) 
+		if ( buffer[ i ] == 26 )
 			buffer[ i ] = ' ';
 		else
 			buffer[ i ] = b + 'A';
