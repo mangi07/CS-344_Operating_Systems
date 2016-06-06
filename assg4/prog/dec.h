@@ -48,6 +48,12 @@ void dec( char* buffer, char* key ) {
 	int i = 0;
 	while ( buffer[i] ) {
 		printf( "buffer[%d]: %d\n", i, buffer[i] );
+
+		// skip over (don't decrypt) invalid characters
+		if ( buffer[i] && ( buffer[i] < 'A' || buffer[i] > 'Z' ) && buffer[i] != ' ' ) {
+			i++;
+			continue;		
+		}
 		//sleep( 1 );
 
 		int b = convert( buffer[i] );

@@ -44,12 +44,20 @@ void clean_buffer( char* buffer ) {
  * Return: buffer encrypted in place */
 void enc( char* buffer, char* key ) {
 
+
+
 	clean_buffer( buffer);
 	// loop over all the characters until you reach newline character
 	// encrypting each character in place as you go
 	int i = 0;
 	while ( buffer[i] ) {
 		printf( "buffer[%d]: %d\n", i, buffer[i] );
+
+		// skip over (don't encrypt) invalid characters
+		if ( buffer[i] && ( buffer[i] < 'A' || buffer[i] > 'Z' ) && buffer[i] != ' ' ) {
+			i++;
+			continue;		
+		}
 		//sleep( 1 );
 
 		int b = convert( buffer[i] );
