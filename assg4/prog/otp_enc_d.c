@@ -29,7 +29,7 @@ int curr_client_idx;
 int init_socket_fd( int portno );
 void start_clients( int sockfd, struct client clients[], int curr_client_idx );
 void fork_child( struct client clients[], int curr );
-void verify_new_connection( int fd );
+int verify_new_connection( int fd );
 int new_client_fd( int sockfd );
 // need method to check clients pids for exit to avoid zombies
 void set_curr_client( int *curr_client_idx );
@@ -143,7 +143,7 @@ void fork_child( struct client clients[], int curr ) {
 			exit(1);
 			break;
 		case 0: // child
-			verify_new_connection( c->fd ); // this is actually on the original socket
+			if ( ! verify_new_connection( c->fd ) ) exit( 1 ); // this is actually on the original socket
 			// set up new port connection on server
 			//assign_new_portno( clients, curr );
 			// let client know about new port
@@ -210,15 +210,25 @@ void send_new_portno( struct client c ) {
 	if ( n < 0 ) error( "Server could not verify client read in send_new_portno.\n" );
 }
 
-void verify_new_connection( int fd ) {
+int verify_new_connection( int fd ) {
+	int ret;
+
 	char buffer[100];
 	bzero(buffer,100);
 	int n = read(fd,buffer,99);
 	if (n < 0) error("Server could not read verification from client.\n");
 	printf("Server says in verify_new_connection: %s\n",buffer);
-
-	n = write( fd, "Server verify", 100 );
+	
+	// make sure the right client is connecting
+	if ( strcmp( "otp_enc", buffer ) != 0 ) {
+		n = write( fd, "forbidden", 100 );
+		ret = 0;
+	} else {
+		n = write( fd, "Server verify", 100 );
+		ret = 1;
+	}
 	if ( n < 0 ) error("Server could not write verification to client.\n");
+	return ret;
 }
 
 // the first client struct with its portno set to 0 is open for use

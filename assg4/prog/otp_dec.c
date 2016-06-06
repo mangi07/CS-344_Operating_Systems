@@ -1,4 +1,4 @@
-/* File: otp_enc.c
+/* File: otp_dec.c
  * Author: Ben R. Olson
  * Date: June 6, 2016
  */
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 void error(const char *msg)
 {
     perror(msg);
-    exit(1);
+    exit(0);
 }
 
 int init(int portno) {
@@ -90,7 +90,7 @@ int init(int portno) {
 
     serv_addr.sin_port = htons(portno); 
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) {
-        fprintf(stderr, "Error: could not contact otp_enc_d on port %d\n", serv_addr.sin_port);
+        fprintf(stderr, "Error: could not contact otp_dec_d on port %d\n", serv_addr.sin_port);
 		exit( 2 );
 	}
     return sockfd;
@@ -98,7 +98,7 @@ int init(int portno) {
 
 void check_argc(int argc) {
 	if ( argc < 4 ) {
-		printf( "Usage: opt_enc plaintext key port\n" );
+		printf( "Usage: opt_dec ciphertext key port\n" );
 		exit( 1 );
 	}
 }
@@ -109,7 +109,7 @@ void check_bad_chars(char *file_name) {
 	while ( ( c = fgetc( file ) ) != EOF ) {
 		// Check for ascii range 65 to 90 (A through Z), space 32, and linefeed 10
 		if ( c != 10 && c != 32 && ( c < 65 || c > 90 ) ) {
-			fprintf( stderr, "otp_enc error: input contains bad characters\n" );
+			fprintf( stderr, "otp_dec error: input contains bad characters\n" );
 			fclose( file );
 			exit( 1 );
 		}
@@ -141,7 +141,7 @@ void verify_new_connection( int fd ) {
 	char buffer[100];
 	int n;
     bzero( buffer, 100 );
-    n = write( fd, "Verification message from client", 100 );
+    n = write( fd, "otp_dec", 100 );
     if (n < 0) 
          error("ERROR writing to socket on client line 146");
     bzero(buffer, 100);
@@ -149,9 +149,9 @@ void verify_new_connection( int fd ) {
     if (n < 0) 
          error("ERROR reading from socket in client on line 150");
     printf("Client says in verify_new_connection: %s\n",buffer);
-	
+
 	// check message from server and exit if "forbidden"
-	if ( strcmp( buffer, "forbidden" ) == 0 ) {
+	if ( strcmp( buffer, "forbidden" ) == 0 ) { 
 		fprintf( stderr, "Connection refused by server.\n" );
 		exit( 1 );
 	}
@@ -187,8 +187,8 @@ void communicate(int sockfd, char *argv[]) {
 	send_file = fopen( argv[1], "r" );
     fgets( buffer, 99999, send_file );
 	fclose( send_file );
-	printf( "CLIENT: plaintext strlen(buffer): %d in communicate\n\n", strlen(buffer) );
-	printf( "CLIENT: plaintext buffer from FILE:\n%s\n", buffer );
+	printf( "CLIENT: ciphertext strlen(buffer): %d in communicate\n\n", strlen(buffer) );
+	printf( "CLIENT: ciphertext buffer from FILE:\n%s\n", buffer );
 
 	// send plaintext to server
 	write_all( buffer, 100000, sockfd );
