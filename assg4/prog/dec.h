@@ -19,6 +19,20 @@ int convert( char c ) {
 	//printf( "In convert, c = %d\n", c );
 	return c;
 }
+
+// check that buffer and key contain only A - Z and space with newline at the end
+void clean_buffer( char* buffer ) {
+	int i = 0;
+	char temp_buffer[100000];
+	while ( buffer[i] && ( buffer[i] < 'A' || buffer[i] > 'Z' || buffer[i] != ' '  )  ) {
+		i++;
+	}
+	// copy the clean portion to temporary buffer, clear original buffer, and then copy back
+	strncpy( temp_buffer, buffer + i, 99999 );
+	bzero( buffer, 100000 );
+	strncpy( buffer, temp_buffer, 99999 );
+
+}
 #endif
 
 /* Expected: buffer passed in must be no longer than 99999 characters
@@ -28,12 +42,13 @@ int convert( char c ) {
  * Return: buffer decrypted in place */
 void dec( char* buffer, char* key ) {
 
+	clean_buffer( buffer );
 	// loop over all the characters until you reach newline character
 	// decrypting each character in place as you go
 	int i = 0;
 	while ( buffer[i] ) {
 		printf( "buffer[%d]: %d\n", i, buffer[i] );
-		sleep( 1 );
+		//sleep( 1 );
 
 		int b = convert( buffer[i] );
 		int k = convert( key[i] );
@@ -57,7 +72,6 @@ void dec( char* buffer, char* key ) {
 	}
 }
 
-// add method to check that buffer and key contain only A - Z and space with newline at the end
 
 
 

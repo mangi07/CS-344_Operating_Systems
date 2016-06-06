@@ -10,6 +10,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#include "enc.h"
+
+
 struct client {
 	int pid;
 	int portno;
@@ -56,11 +59,11 @@ int main(int argc, char *argv[])
 	// loop accept in start_clients
 	while ( 1 ) { // test
 		start_clients( sockfd, clients, curr_client_idx );
-		printf( "\n\nserver trace 1\n\n" );
+		//printf( "\n\nserver trace 1\n\n" );
 		manage_clients( clients, &curr_client_idx );
-		printf( "\n\nserver trace 2\n\n" );
+		//printf( "\n\nserver trace 2\n\n" );
 		show_clients( clients );
-		printf( "\n\nserver trace 3\n\n" );
+		//printf( "\n\nserver trace 3\n\n" );
 	} // newest
 	close(sockfd);
 
@@ -89,13 +92,13 @@ int init_socket_fd( int portno ) {
 
 // sockfd is the parent socket fd
 void start_clients( int sockfd, struct client clients[], int curr ) {
-	printf( "\n\nserver trace start_clients1\n\n" );
+	//printf( "\n\nserver trace start_clients1\n\n" );
 	// accept happens here
 	clients[curr].fd = new_client_fd( sockfd );
-	printf( "\n\nserver trace start_clients2\n\n" );
+	//printf( "\n\nserver trace start_clients2\n\n" );
 	// fork and do the encryption in the child process
 	fork_child( clients, curr );
-	printf( "\n\nserver trace start_clients3\n\n" );
+	//printf( "\n\nserver trace start_clients3\n\n" );
 }
 
 int newsockfd;
@@ -108,7 +111,7 @@ int new_client_fd( int sockfd ) {
 
 	clilen = sizeof(cli_addr);
 	// trace segfault here??
-	printf( "\n\nserver trace new_client_fd pid = %d\n\n", getpid() );
+	//printf( "\n\nserver trace new_client_fd pid = %d\n\n", getpid() );
 	newsockfd = accept(sockfd, 
 			(struct sockaddr *) &cli_addr, 
 			&clilen);
@@ -149,7 +152,7 @@ void fork_child( struct client clients[], int curr ) {
 			// new handshake with client on this new connection
 			verify_new_connection( c->fd );
 			communicate( c->fd );
-			printf( "made it all the way through on server!\n" );
+			printf( "****************made it all the way through on server!\n" );
 			close( c->fd );
 			exit( 0 );
 		default: // parent
@@ -159,7 +162,7 @@ void fork_child( struct client clients[], int curr ) {
 				printf( "Could not wait for child in switch defalut!\n" );
 				exit( 1 );
 			}
-			printf( "child pid is %d\n", spawnpid ); // debug
+			//printf( "child pid is %d\n", spawnpid ); // debug
 			c->pid = spawnpid;
 			break;
 	}
@@ -225,14 +228,22 @@ void set_curr_client( int *curr_client_idx ) {
 	}
 }
 
+// should happen inside the fork
 void communicate( int sockfd ) {
-	// going to need to fork and start up on new port for this read/write stuff
-	// as specified in "Concurrency Implications" of assignment spec file
-	char buffer[100000];
-	bzero(buffer,100000);
-	read_all( buffer, 100000, sockfd );
-	printf("SERVER: here is the message: %s\n",buffer);
-	write_all( buffer, 100000, sockfd ); // received text will be translated before this send
+	// receive message from client, to be encrypted
+	char text_buffer[100000];
+	bzero(text_buffer,100000);
+	read_all( text_buffer, 100000, sockfd );
+	printf("SERVER: here is the message (plaintext): %s\n", text_buffer);
+	// receive key from client, used for enctryption
+	char key_buffer[100000];
+	bzero(key_buffer,100000);
+	read_all( key_buffer, 100000, sockfd );
+	printf("SERVER: here is the message (key): %s\n", key_buffer);
+	
+	// encrypt message and send to client
+	enc( text_buffer, key_buffer ); // method included from enc.h
+	write_all( text_buffer, 100000, sockfd ); // received text will be translated before this send
 }
 
 // fills the buffer in chunks
@@ -245,7 +256,7 @@ void read_all( char *buffer, int buff_size, int fd ) {
 		strcat( buffer, temp_buffer );
 		tally += n;
 		//printf( "SERVER: in read_all, return value of read: %d and tally = %d\n", n, tally );
-		//printf( "SERVER: in read_all, buffer:\n%s\n", buffer );
+		printf( "SERVER: in read_all, buffer: %s\n", buffer );
 		if ( tally >= buff_size ) break;
 	}
 	//printf( "\n\nSERVER: trace1 read_all buffer: %s\n\n", buffer );
@@ -259,7 +270,7 @@ void write_all( char *buffer, int buff_size, int fd ) {
 	while( (n = write( fd, buffer, buff_size )) < buff_size ) {
 		printf( "SERVER: in write_all, return value of write: %d\n", n );
 	}
-	printf( "\n\nSERVER: trace1 write_all\n\n" );
+	//printf( "\n\nSERVER: trace1 write_all\n\n" );
 	if (n < 0) { 
 		error("ERROR writing to socket, in write_all");
 	}
@@ -304,7 +315,7 @@ void show_clients( struct client clients[] ) {
 	printf( "Executing show_clients\n" );
 	int i;
 	for ( i = 0; i < 5; ++i ) {
-		printf( "\n\nSHOWING CLIENTS: client: %d:\tpid:\t%d\tportno:\t%d\tfd:\t%d\n",
+		printf( "SHOWING CLIENTS: client: %d:\tpid:\t%d\tportno:\t%d\tfd:\t%d\n",
 			i,
 			clients[i].pid,
 			clients[i].portno,
