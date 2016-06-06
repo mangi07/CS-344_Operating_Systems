@@ -1,3 +1,8 @@
+/* File: otp_enc_d.c
+ * Author: Ben R. Olson
+ * Date: June 6, 2016
+ */
+
 
 /* A simple server in the internet domain using TCP
    The port number is passed as an argument */
@@ -256,7 +261,7 @@ void read_all( char *buffer, int buff_size, int fd ) {
 		strcat( buffer, temp_buffer );
 		tally += n;
 		//printf( "SERVER: in read_all, return value of read: %d and tally = %d\n", n, tally );
-		printf( "SERVER: in read_all, buffer: %s\n", buffer );
+		//printf( "SERVER: in read_all, buffer: %s\n", buffer );
 		if ( tally >= buff_size ) break;
 	}
 	//printf( "\n\nSERVER: trace1 read_all buffer: %s\n\n", buffer );

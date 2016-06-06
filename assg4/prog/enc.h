@@ -51,7 +51,7 @@ void enc( char* buffer, char* key ) {
 	// encrypting each character in place as you go
 	int i = 0;
 	while ( buffer[i] ) {
-		printf( "buffer[%d]: %d\n", i, buffer[i] );
+		//printf( "buffer[%d]: %d\n", i, buffer[i] );
 
 		// skip over (don't encrypt) invalid characters
 		if ( buffer[i] && ( buffer[i] < 'A' || buffer[i] > 'Z' ) && buffer[i] != ' ' ) {

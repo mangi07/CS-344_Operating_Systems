@@ -1,3 +1,8 @@
+/* File: otp_enc.c
+ * Author: Ben R. Olson
+ * Date: June 6, 2016
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -196,8 +201,19 @@ void communicate(int sockfd, char *argv[]) {
 
 	// receive encrypted text from server
 	read_translation( buffer, 100000, sockfd );
-    printf("CLIENT: Buffer from server (encrypted text): %s\n",buffer);
-
+	
+	// print encrypted text
+	//printf( "debug unclean buffer (encryption): %s\n", buffer );
+	int i = 0;
+	while ( buffer[i] ) {
+		//printf( "trace printing out received encryption on CLIENT in while loop: " );
+		if ( ( buffer[i] >= 'A' && buffer[i] <= 'Z' ) || buffer[i] == ' ' ) {
+			fputc( buffer[i], stdout );
+		}
+		//fputc( '\n', stdout );
+		i++;
+	}
+	fputc( '\n', stdout );
 }
 
 void read_all( char *buffer, int buff_size, int fd ) {
