@@ -31,14 +31,12 @@ void start_clients( int sockfd, struct client clients[], int curr_client_idx );
 void fork_child( struct client clients[], int curr );
 int verify_new_connection( int fd );
 int new_client_fd( int sockfd );
-// need method to check clients pids for exit to avoid zombies
 void set_curr_client( int *curr_client_idx );
 void assign_new_portno( struct client clients[], int curr_idx );
 int rand_range();
 void send_new_portno( struct client ); // implement
 // after fork, server starts listending on this new port
 // then curr client sends its first request on this new port
-// (is curr client idx shared between processes??)
 void communicate( int sockfd );
 void manage_clients( struct client clients[], int *curr_client );
 void show_clients( struct client clients[] );
@@ -64,12 +62,9 @@ int main(int argc, char *argv[])
 	// loop accept in start_clients
 	while ( 1 ) { // test
 		start_clients( sockfd, clients, curr_client_idx );
-		//printf( "\n\nserver trace 1\n\n" );
 		manage_clients( clients, &curr_client_idx );
-		//printf( "\n\nserver trace 2\n\n" );
 		//show_clients( clients );
-		//printf( "\n\nserver trace 3\n\n" );
-	} // newest
+	}
 	close(sockfd);
 
 	return 0; 
@@ -97,26 +92,18 @@ int init_socket_fd( int portno ) {
 
 // sockfd is the parent socket fd
 void start_clients( int sockfd, struct client clients[], int curr ) {
-	//printf( "\n\nserver trace start_clients1\n\n" );
 	// accept happens here
 	clients[curr].fd = new_client_fd( sockfd );
-	//printf( "\n\nserver trace start_clients2\n\n" );
 	// fork and do the encryption in the child process
 	fork_child( clients, curr );
-	//printf( "\n\nserver trace start_clients3\n\n" );
 }
 
 int newsockfd;
 socklen_t clilen;
 struct sockaddr_in cli_addr;
 int new_client_fd( int sockfd ) {
-	//int newsockfd;
-	//socklen_t clilen;
-	//struct sockaddr_in cli_addr;
 
 	clilen = sizeof(cli_addr);
-	// trace segfault here??
-	//printf( "\n\nserver trace new_client_fd pid = %d\n\n", getpid() );
 	newsockfd = accept(sockfd, 
 			(struct sockaddr *) &cli_addr, 
 			&clilen);
@@ -144,20 +131,16 @@ void fork_child( struct client clients[], int curr ) {
 			break;
 		case 0: // child
 			if ( ! verify_new_connection( c->fd ) ) exit( 1 ); // this is actually on the original socket
-			// set up new port connection on server
-			//assign_new_portno( clients, curr );
 			// let client know about new port
 			send_new_portno( *c );
 			close( c->fd );
 
 			// set up new socket on server with the new port number
 			int temp_fd = init_socket_fd( c->portno );
-			//printf( "\n\ntrace case 0: child pid = %d\n\n", getpid() );
 			c->fd = new_client_fd( temp_fd );
 			// new handshake with client on this new connection
 			verify_new_connection( c->fd );
 			communicate( c->fd );
-			//printf( "****************made it all the way through on server!\n" );
 			close( c->fd );
 			exit( 0 );
 		default: // parent
@@ -167,7 +150,6 @@ void fork_child( struct client clients[], int curr ) {
 				printf( "Could not wait for child in switch defalut!\n" );
 				exit( 1 );
 			}
-			//printf( "child pid is %d\n", spawnpid ); // debug
 			c->pid = spawnpid;
 			break;
 	}
@@ -201,7 +183,6 @@ void send_new_portno( struct client c ) {
 	bzero( buffer, 10 );
 	// convert port number to fill buffer
 	snprintf( buffer, sizeof(buffer), "%d\0", c.portno );	
-	//printf( "On server in send_new_portno: buffer sent: %s\n", buffer );
 	int n = write( c.fd, buffer, 9  );
 	if (n < 0) error("ERROR writing to socket on server line 173");
 	// verify with client that all was read
@@ -217,7 +198,6 @@ int verify_new_connection( int fd ) {
 	bzero(buffer,100);
 	int n = read(fd,buffer,99);
 	if (n < 0) error("Server could not read verification from client.\n");
-	//printf("Server says in verify_new_connection: %s\n",buffer);
 	
 	// make sure the right client is connecting
 	if ( strcmp( "otp_enc", buffer ) != 0 ) {
@@ -249,16 +229,12 @@ void communicate( int sockfd ) {
 	char text_buffer[100000];
 	bzero(text_buffer,100000);
 	read_all( text_buffer, 100000, sockfd );
-	//printf("SERVER: here is the message (plaintext): %s\n", text_buffer);
 	// receive key from client, used for enctryption
 	char key_buffer[100000];
 	bzero(key_buffer,100000);
 	read_all( key_buffer, 100000, sockfd );
-	//printf("SERVER: here is the message (key): %s\n", key_buffer);
 	
 	// encrypt message and send to client
-	//printf( "\n\n*************text_buffer:\n%s\n\n", text_buffer);
-	//printf( "\n\n*************key_buffer:\n%s\n\n", key_buffer);
 	enc( text_buffer, key_buffer ); // method included from enc.h
 	write_all( text_buffer, 100000, sockfd ); // received text will be translated before this send
 }
@@ -272,11 +248,8 @@ void read_all( char *buffer, int buff_size, int fd ) {
 		// append current buffer to destination buffer
 		strcat( buffer, temp_buffer );
 		tally += n;
-		//printf( "SERVER: in read_all, return value of read: %d and tally = %d\n", n, tally );
-		//printf( "SERVER: in read_all, buffer: %s\n", buffer );
 		if ( tally >= buff_size ) break;
 	}
-	//printf( "\n\nSERVER: trace1 read_all buffer: %s\n\n", buffer );
 	if (n < 0) { 
 		error("ERROR reading from socket, in read_all");
 	}
@@ -285,9 +258,7 @@ void read_all( char *buffer, int buff_size, int fd ) {
 void write_all( char *buffer, int buff_size, int fd ) {
 	int n;
 	while( (n = write( fd, buffer, buff_size )) < buff_size ) {
-		//printf( "SERVER: in write_all, return value of write: %d\n", n );
 	}
-	//printf( "\n\nSERVER: trace1 write_all\n\n" );
 	if (n < 0) { 
 		error("ERROR writing to socket, in write_all");
 	}
@@ -307,11 +278,9 @@ void manage_clients( struct client clients[], int *curr_client ) {
 			// do nothing
 		} else if ( WIFEXITED( b_status ) ) {
 			int b_ret_status = WEXITSTATUS( b_status );
-			//printf( "\nbackground pid %d is done: exit value %d\n\n", clients[i].pid, b_ret_status );
 			isDone = 1;
 		} else if ( WIFSIGNALED( b_status ) ) {
 			// if there was a signal caught
-			//printf( "\nbackground pid %d is done: terminated by signal  %d\n\n", clients[i].pid, b_status );
 			isDone = 1;
 		}
 		if ( isDone ) {

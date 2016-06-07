@@ -16,7 +16,6 @@
 int convert( char c ) {
 	if ( c >= 'A' && c <= 'Z' ) c = c - 'A';
 	else if ( c == ' ' ) c = 26;
-	//printf( "In convert, c = %d\n", c );
 	return c;
 }
 
@@ -36,27 +35,22 @@ void clean_buffer( char* buffer ) {
 }
 #endif
 
-/* Expected: buffer passed in must be no longer than 99999 characters
+/* Expected: buffer passed in must be size 100000
  * and end with newline character,
  * and key passed in must be at least as long as the buffer
  * 
  * Return: buffer decrypted in place */
 void dec( char* buffer, char* key ) {
-	//printf( "In dec, buffer passed in:\n%s\n", buffer );
 	clean_buffer( buffer );
-	//printf( "In dec, buffer cleaned:\n%s\n", buffer );
 	// loop over all the characters until you reach newline character
 	// decrypting each character in place as you go
 	int i = 0;
 	while ( buffer[i] ) {
-		//printf( "buffer[%d]: %d\n", i, buffer[i] );
-
 		// skip over (don't decrypt) invalid characters
 		if ( buffer[i] && ( buffer[i] < 'A' || buffer[i] > 'Z' ) && buffer[i] != ' ' ) {
 			i++;
 			continue;		
 		}
-		//sleep( 1 );
 
 		int b = convert( buffer[i] );
 		int k = convert( key[i] );

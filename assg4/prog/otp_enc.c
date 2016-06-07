@@ -46,9 +46,7 @@ int main(int argc, char *argv[])
 	// need to set up for new, agreed-upon port with server, 
 	// but we're still on the orignal connection at this point.
 	portno = receive_new_portno( sockfd );
-	//printf( "\n\ntrace2\n\n" );
 	close( sockfd );
-	//printf( "In client, right after closing initial socket.\n" );
 
 	sockfd = init( portno );
 	verify_new_connection( sockfd );
@@ -58,9 +56,6 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-// Add arg for setting error number
-//  1 invalid args or
-//  2 cannot find port
 void error(const char *msg)
 {
     perror(msg);
@@ -86,7 +81,6 @@ int init(int portno) {
     bcopy((char *)server->h_addr, 
          (char *)&serv_addr.sin_addr.s_addr,
          server->h_length);
-
 
     serv_addr.sin_port = htons(portno); 
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) {
@@ -123,7 +117,6 @@ int get_char_count( char *file_name ) {
 	struct stat file_stat;
 	fstat( fd, &file_stat );
 	int size = file_stat.st_size;
-	//printf( "size: %d\n", size );
 	fclose( file );
 	return size;
 }
@@ -148,7 +141,6 @@ void verify_new_connection( int fd ) {
     n = read( fd, buffer, 99 );
     if (n < 0) 
          error("ERROR reading from socket in client on line 150");
-    //printf("Client says in verify_new_connection: %s\n",buffer);
 	
 	// check message from server and exit if "forbidden"
 	if ( strcmp( buffer, "forbidden" ) == 0 ) {
@@ -168,8 +160,6 @@ int receive_new_portno( int fd ) {
 			buffer[i] = ' '; 
 	}
 	portno = atoi( buffer );
-	//printf("New port number from server raw: %s\n", buffer );
-    //printf("New port number from server converted: %d\n\n", portno );
 	return portno;
 }
 
@@ -187,8 +177,6 @@ void communicate(int sockfd, char *argv[]) {
 	send_file = fopen( argv[1], "r" );
     fgets( buffer, 99999, send_file );
 	fclose( send_file );
-	//printf( "CLIENT: plaintext strlen(buffer): %d in communicate\n\n", strlen(buffer) );
-	//printf( "CLIENT: plaintext buffer from FILE:\n%s\n", buffer );
 
 	// send plaintext to server
 	write_all( buffer, 100000, sockfd );
@@ -198,8 +186,6 @@ void communicate(int sockfd, char *argv[]) {
 	send_file = fopen( argv[2], "r" );
 	fgets( buffer, 99999, send_file );
 	fclose( send_file );
-	//printf( "CLIENT: key strlen(buffer): %d in communicate\n\n", strlen(buffer) );
-	//printf( "CLIENT: key buffer from FILE:\n%s\n", buffer );
 
 	// send key to server
 	write_all( buffer, 100000, sockfd );
@@ -209,14 +195,11 @@ void communicate(int sockfd, char *argv[]) {
 	read_translation( buffer, 100000, sockfd );
 	
 	// print encrypted text
-	//printf( "debug unclean buffer (encryption): %s\n", buffer );
 	int i = 0;
 	while ( buffer[i] ) {
-		//printf( "trace printing out received encryption on CLIENT in while loop: " );
 		if ( ( buffer[i] >= 'A' && buffer[i] <= 'Z' ) || buffer[i] == ' ' ) {
 			fputc( buffer[i], stdout );
 		}
-		//fputc( '\n', stdout );
 		i++;
 	}
 	fputc( '\n', stdout );
@@ -227,11 +210,8 @@ void read_all( char *buffer, int buff_size, int fd ) {
 	int tally = 0;
 	while( (n = read( fd, buffer, buff_size )) > 0 && tally <= buff_size) {
 		tally += n;
-		//printf( "CLIENT: in read_all, return value of read: %d and tally = %d\n", n, tally );
-		//printf( "CLIENT: in read_all, buffer:\n%s\n", buffer );
 		if ( tally >= buff_size ) break;
 	}
-	//printf( "\n\nCLIENT: trace1 read_all\n\n" );
 	if (n < 0) { 
 		error("ERROR reading from socket, in read_all");
 	}
@@ -242,9 +222,7 @@ void read_all( char *buffer, int buff_size, int fd ) {
 void write_all( char *buffer, int buff_size, int fd ) {
 	int n;
 	while( (n = write( fd, buffer, buff_size )) < buff_size ) {
-		//printf( "CLIENT: in write_all, return value of write: %d\n", n );
 	}
-	//printf( "\n\nCLIENT: trace1 write_all client\n\n" );
 	if (n < 0) { 
 		error("ERROR writing to socket, in write_all");
 	}
@@ -259,8 +237,6 @@ void read_translation( char *buffer, int buff_size, int fd ) {
 		// append current buffer to destination buffer
 		strcat( buffer, temp_buffer );
 		tally += n;
-		//printf( "CLIENT: in read_all, return value of read: %d and tally = %d\n", n, tally );
-		//printf( "CLIENT: in read_all, buffer:\n%s\n", buffer );
 		if ( tally >= buff_size ) break;
 	}
 	//printf( "\n\nCLIENT: trace1 read_all buffer: %s\n\n", buffer );
