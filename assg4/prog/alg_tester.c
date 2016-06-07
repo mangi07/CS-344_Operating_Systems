@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 {
 	// expects two arguments: buffer and then key
 	if ( argc < 3 ) {
-		printf( "Usage: enc_tester buffer key\n\n" );
+		printf( "Usage: alg_tester buffer key\n\n" );
 		exit( 1 );
 	}
 	

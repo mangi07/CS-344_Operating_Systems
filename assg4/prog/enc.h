@@ -37,16 +37,13 @@ void clean_buffer( char* buffer ) {
 }
 #endif
 
-/* Expected: buffer passed in must be no longer than 99999 characters
- * and end with newline character,
+/* Expected: buffer passed in must be size 100000
  * and key passed in must be at least as long as the buffer
  * 
  * Return: buffer encrypted in place */
 void enc( char* buffer, char* key ) {
 
-
-
-	clean_buffer( buffer);
+	clean_buffer( buffer );
 	// loop over all the characters until you reach newline character
 	// encrypting each character in place as you go
 	int i = 0;

@@ -21,10 +21,11 @@ int convert( char c ) {
 }
 
 // check that buffer and key contain only A - Z and space with newline at the end
+// buffer must be size 100000
 void clean_buffer( char* buffer ) {
 	int i = 0;
 	char temp_buffer[100000];
-	while ( buffer[i] && ( buffer[i] < 'A' || buffer[i] > 'Z' || buffer[i] != ' '  )  ) {
+	while ( buffer[i] && ( buffer[i] < 'A' || buffer[i] > 'Z' ) && buffer[i] != ' '  ) {
 		i++;
 	}
 	// copy the clean portion to temporary buffer, clear original buffer, and then copy back
@@ -41,13 +42,14 @@ void clean_buffer( char* buffer ) {
  * 
  * Return: buffer decrypted in place */
 void dec( char* buffer, char* key ) {
-
+	printf( "In dec, buffer passed in:\n%s\n", buffer );
 	clean_buffer( buffer );
+	printf( "In dec, buffer cleaned:\n%s\n", buffer );
 	// loop over all the characters until you reach newline character
 	// decrypting each character in place as you go
 	int i = 0;
 	while ( buffer[i] ) {
-		printf( "buffer[%d]: %d\n", i, buffer[i] );
+		//printf( "buffer[%d]: %d\n", i, buffer[i] );
 
 		// skip over (don't decrypt) invalid characters
 		if ( buffer[i] && ( buffer[i] < 'A' || buffer[i] > 'Z' ) && buffer[i] != ' ' ) {

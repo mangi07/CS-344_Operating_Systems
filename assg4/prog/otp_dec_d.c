@@ -1,4 +1,4 @@
-/* File: otp_enc_d.c
+/* File: otp_dec_d.c
  * Author: Ben R. Olson
  * Date: June 6, 2016
  */
@@ -15,7 +15,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "enc.h"
+#include "dec.h"
 
 
 struct client {
@@ -220,7 +220,7 @@ int verify_new_connection( int fd ) {
 	//printf("Server says in verify_new_connection: %s\n",buffer);
 	
 	// make sure the right client is connecting
-	if ( strcmp( "otp_enc", buffer ) != 0 ) {
+	if ( strcmp( "otp_dec", buffer ) != 0 ) {
 		n = write( fd, "forbidden", 100 );
 		ret = 0;
 	} else {
@@ -257,9 +257,8 @@ void communicate( int sockfd ) {
 	//printf("SERVER: here is the message (key): %s\n", key_buffer);
 	
 	// encrypt message and send to client
-	printf( "\n\n*************text_buffer:\n%s\n\n", text_buffer);
-	printf( "\n\n*************key_buffer:\n%s\n\n", key_buffer);
-	enc( text_buffer, key_buffer ); // method included from enc.h
+	printf( "text_buffer:\n%s\n", text_buffer );
+	dec( text_buffer, key_buffer ); // method included from dec.h
 	write_all( text_buffer, 100000, sockfd ); // received text will be translated before this send
 }
 
@@ -307,11 +306,11 @@ void manage_clients( struct client clients[], int *curr_client ) {
 			// do nothing
 		} else if ( WIFEXITED( b_status ) ) {
 			int b_ret_status = WEXITSTATUS( b_status );
-			//printf( "\nbackground pid %d is done: exit value %d\n\n", clients[i].pid, b_ret_status );
+			printf( "\nbackground pid %d is done: exit value %d\n\n", clients[i].pid, b_ret_status );
 			isDone = 1;
 		} else if ( WIFSIGNALED( b_status ) ) {
 			// if there was a signal caught
-			//printf( "\nbackground pid %d is done: terminated by signal  %d\n\n", clients[i].pid, b_status );
+			printf( "\nbackground pid %d is done: terminated by signal  %d\n\n", clients[i].pid, b_status );
 			isDone = 1;
 		}
 		if ( isDone ) {

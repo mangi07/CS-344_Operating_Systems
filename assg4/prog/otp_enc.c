@@ -141,14 +141,14 @@ void verify_new_connection( int fd ) {
 	char buffer[100];
 	int n;
     bzero( buffer, 100 );
-    n = write( fd, "Verification message from client", 100 );
+    n = write( fd, "otp_enc", 100 );
     if (n < 0) 
          error("ERROR writing to socket on client line 146");
     bzero(buffer, 100);
     n = read( fd, buffer, 99 );
     if (n < 0) 
          error("ERROR reading from socket in client on line 150");
-    printf("Client says in verify_new_connection: %s\n",buffer);
+    //printf("Client says in verify_new_connection: %s\n",buffer);
 	
 	// check message from server and exit if "forbidden"
 	if ( strcmp( buffer, "forbidden" ) == 0 ) {
@@ -168,8 +168,8 @@ int receive_new_portno( int fd ) {
 			buffer[i] = ' '; 
 	}
 	portno = atoi( buffer );
-	printf("New port number from server raw: %s\n", buffer );
-    printf("New port number from server converted: %d\n\n", portno );
+	//printf("New port number from server raw: %s\n", buffer );
+    //printf("New port number from server converted: %d\n\n", portno );
 	return portno;
 }
 
@@ -187,8 +187,8 @@ void communicate(int sockfd, char *argv[]) {
 	send_file = fopen( argv[1], "r" );
     fgets( buffer, 99999, send_file );
 	fclose( send_file );
-	printf( "CLIENT: plaintext strlen(buffer): %d in communicate\n\n", strlen(buffer) );
-	printf( "CLIENT: plaintext buffer from FILE:\n%s\n", buffer );
+	//printf( "CLIENT: plaintext strlen(buffer): %d in communicate\n\n", strlen(buffer) );
+	//printf( "CLIENT: plaintext buffer from FILE:\n%s\n", buffer );
 
 	// send plaintext to server
 	write_all( buffer, 100000, sockfd );
@@ -198,8 +198,8 @@ void communicate(int sockfd, char *argv[]) {
 	send_file = fopen( argv[2], "r" );
 	fgets( buffer, 99999, send_file );
 	fclose( send_file );
-	printf( "CLIENT: key strlen(buffer): %d in communicate\n\n", strlen(buffer) );
-	printf( "CLIENT: key buffer from FILE:\n%s\n", buffer );
+	//printf( "CLIENT: key strlen(buffer): %d in communicate\n\n", strlen(buffer) );
+	//printf( "CLIENT: key buffer from FILE:\n%s\n", buffer );
 
 	// send key to server
 	write_all( buffer, 100000, sockfd );
@@ -242,7 +242,7 @@ void read_all( char *buffer, int buff_size, int fd ) {
 void write_all( char *buffer, int buff_size, int fd ) {
 	int n;
 	while( (n = write( fd, buffer, buff_size )) < buff_size ) {
-		printf( "CLIENT: in write_all, return value of write: %d\n", n );
+		//printf( "CLIENT: in write_all, return value of write: %d\n", n );
 	}
 	//printf( "\n\nCLIENT: trace1 write_all client\n\n" );
 	if (n < 0) { 
