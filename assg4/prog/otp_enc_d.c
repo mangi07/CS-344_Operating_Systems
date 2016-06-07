@@ -257,8 +257,8 @@ void communicate( int sockfd ) {
 	//printf("SERVER: here is the message (key): %s\n", key_buffer);
 	
 	// encrypt message and send to client
-	printf( "\n\n*************text_buffer:\n%s\n\n", text_buffer);
-	printf( "\n\n*************key_buffer:\n%s\n\n", key_buffer);
+	//printf( "\n\n*************text_buffer:\n%s\n\n", text_buffer);
+	//printf( "\n\n*************key_buffer:\n%s\n\n", key_buffer);
 	enc( text_buffer, key_buffer ); // method included from enc.h
 	write_all( text_buffer, 100000, sockfd ); // received text will be translated before this send
 }

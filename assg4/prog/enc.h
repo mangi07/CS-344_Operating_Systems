@@ -27,13 +27,13 @@ void clean_buffer( char* buffer ) {
 	char temp_buffer[100000];
 	while ( buffer[i] && ( buffer[i] < 'A' || buffer[i] > 'Z' ) && buffer[i] != ' ' ) {
 		i++;
-		printf( "in clean_buffer while loop, buffer[%d] = %c\n", i, buffer[i] );
+		//printf( "in clean_buffer while loop, buffer[%d] = %c\n", i, buffer[i] );
 	}
 	// copy the clean portion to temporary buffer, clear original buffer, and then copy back
 	strncpy( temp_buffer, buffer + i, 99999 );
 	bzero( buffer, 100000 );
 	strncpy( buffer, temp_buffer, 99999 );
-	printf( "in clean_buffer at end, buffer holds %s\n", buffer );
+	//printf( "in clean_buffer at end, buffer holds %s\n", buffer );
 }
 #endif
 

@@ -42,9 +42,9 @@ void clean_buffer( char* buffer ) {
  * 
  * Return: buffer decrypted in place */
 void dec( char* buffer, char* key ) {
-	printf( "In dec, buffer passed in:\n%s\n", buffer );
+	//printf( "In dec, buffer passed in:\n%s\n", buffer );
 	clean_buffer( buffer );
-	printf( "In dec, buffer cleaned:\n%s\n", buffer );
+	//printf( "In dec, buffer cleaned:\n%s\n", buffer );
 	// loop over all the characters until you reach newline character
 	// decrypting each character in place as you go
 	int i = 0;

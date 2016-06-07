@@ -152,8 +152,8 @@ void verify_new_connection( int fd ) {
 
 	// check message from server and exit if "forbidden"
 	if ( strcmp( buffer, "forbidden" ) == 0 ) { 
-		fprintf( stderr, "Connection refused by server.\n" );
-		exit( 1 );
+		fprintf( stderr, "Error: could not contact otp_enc_d.\n" );
+		exit( 2 );
 	}
 }
 
